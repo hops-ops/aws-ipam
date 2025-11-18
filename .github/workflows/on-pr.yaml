@@ -9,6 +9,13 @@ on:
       - opened
       - reopened
       - synchronize
+    paths:
+      - 'apis/ipams/**'
+      - 'examples/ipams/**'
+      - 'tests/**'
+      - 'functions/render/**'
+      - '.github/workflows/on-pr.yaml'
+      - 'upbound.yaml'
 
 permissions:
   packages: write
