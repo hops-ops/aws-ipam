@@ -39,7 +39,7 @@ _items = [
                             pools: [
                                 {
                                     name: "shared"
-                                    cidrBlock: "10.16.0.0/16"
+                                    cidr: "10.16.0.0/16"
                                     allocationDefaultNetmaskLength: 24
                                     labels: {
                                         purpose: "e2e"
