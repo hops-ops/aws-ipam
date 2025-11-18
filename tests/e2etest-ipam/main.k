@@ -6,8 +6,8 @@ import models.ai.com.ops.hops.aws.v1alpha1 as hops
 import models.io.upbound.dev.meta.v1alpha1 as metav1alpha1
 
 _now = str(int(math.floor(datetime.ticks())))
-_org_name = "ipam-" + _now
-_composite_name = "e2e-ipam-" + _now
+_org_name = "hops-e2e-ipam-org-" + _now
+_composite_name = "hops-e2e-ipam-" + _now
 _provider_config_name = "ipam-provider-" + _now
 
 _creds = file.read("secrets/aws-creds")
