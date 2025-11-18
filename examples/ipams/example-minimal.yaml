@@ -1,0 +1,24 @@
+apiVersion: aws.hops.ops.com.ai/v1alpha1
+kind: IPAM
+metadata:
+  name: platform-ipam
+  namespace: example-env
+spec:
+  organizationName: platform
+  managementMode: self
+  forProvider:
+    scope: delegated-organization
+    delegatedAdminAccountRef:
+      name: platform-root
+    homeRegion: us-west-2
+    operatingRegions:
+      - us-west-2
+    pools:
+      - name: platform-shared
+        cidr: 10.0.0.0/8
+        allocationDefaultNetmaskLength: 16
+        labels:
+          function: shared
+        tags:
+          owner: platform
+          environment: dev

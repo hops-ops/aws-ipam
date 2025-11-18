@@ -1,0 +1,48 @@
+name: pr
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - labeled
+      - opened
+      - reopened
+      - synchronize
+
+permissions:
+  packages: write
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  validate:
+    uses: unbounded-tech/workflows-crossplane/.github/workflows/validate.yaml@v0.8.0
+    with:
+      examples: |
+        [
+          "examples/ipams/example-minimal.yaml",
+          "examples/ipams/example-multi-region.yaml"
+        ]
+      api_path: apis/ipams
+      error_on_missing_schemas: true
+
+  test:
+    uses: unbounded-tech/workflows-crossplane/.github/workflows/test.yaml@v0.8.0
+
+  e2e:
+    uses: unbounded-tech/workflows-crossplane/.github/workflows/e2e-aws.yaml@v0.8.0
+    secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+  publish:
+    needs:
+      - validate
+      - test
+      - e2e
+    uses: unbounded-tech/workflows-crossplane/.github/workflows/publish.yaml@v0.8.0
+    secrets: inherit
+    with:
+      tag: pr-${{ github.event.pull_request.number }}-${{ github.sha }}

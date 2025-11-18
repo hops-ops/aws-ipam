@@ -1,0 +1,55 @@
+# code: language=yaml
+# yaml-language-server: $schema=../../.up/json/models/index.schema.json
+
+{{ range $pool := $ipamPools }}
+  {{- $poolName := $pool.name }}
+  {{- $poolCidr := $pool.cidr | default $pool.cidrBlock }}
+  {{- if and $poolName $poolCidr }}
+    {{- $poolRegion := $pool.region | default $pool.locale | default $homeRegion }}
+    {{- $poolLocale := $pool.locale | default $poolRegion }}
+    {{- $poolLabels := merge (dict "hops.ops.com.ai/organization" $organizationName "aws.hops.ops.com.ai/ipam-pool" $poolName) ($pool.labels | default (dict)) }}
+    {{- $poolTags := merge $defaultAWSTags ($pool.tags | default (dict)) }}
+    {{- $poolResourceName := printf "%s-%s" $organizationName $poolName }}
+    {{- $poolDescription := $pool.description | default (printf "%s pool for %s" $poolName $organizationName) }}
+    {{- $allocationDefault := $pool.allocationDefaultNetmaskLength | default $pool.allocationNetmaskLength }}
+    {{- $allocationMin := $pool.allocationMinNetmaskLength }}
+    {{- $allocationMax := $pool.allocationMaxNetmaskLength }}
+
+---
+
+apiVersion: vpc.aws.m.upbound.io/v1beta1
+kind: IPAMPool
+metadata:
+  name: {{ $poolResourceName }}
+  annotations:
+    {{ setResourceNameAnnotation (printf "ipam-pool-%s" $poolName) }}
+  labels:
+    {{- toYaml $poolLabels | nindent 4 }}
+spec:
+  deletionPolicy: {{ $deletionPolicy }}
+  managementPolicies: {{ toYaml $managementPolicies | nindent 4 }}
+  forProvider:
+    addressFamily: ipv4
+    cidr: {{ $poolCidr }}
+    description: {{ $poolDescription }}
+    ipamScopeIdRef:
+      name: {{ printf "%s-ipam-private" $organizationName }}
+    locale: {{ $poolLocale }}
+    region: {{ $poolRegion }}
+    {{- if $allocationDefault }}
+    allocationDefaultNetmaskLength: {{ $allocationDefault }}
+    {{- end }}
+    {{- if $allocationMin }}
+    allocationMinNetmaskLength: {{ $allocationMin }}
+    {{- end }}
+    {{- if $allocationMax }}
+    allocationMaxNetmaskLength: {{ $allocationMax }}
+    {{- end }}
+    tags:
+      {{- toYaml $poolTags | nindent 6 }}
+  providerConfigRef:
+    kind: ProviderConfig
+    name: {{ $providerConfigName }}
+
+  {{- end }}
+{{ end }}

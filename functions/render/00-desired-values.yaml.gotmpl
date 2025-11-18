@@ -1,0 +1,48 @@
+# code: language=yaml
+
+{{ $xr := getCompositeResource . }}
+{{ $metadata := $xr.metadata | default (dict) }}
+{{ $spec := $xr.spec | default (dict) }}
+
+{{ $organizationName := $spec.organizationName | default ($metadata.name | default "ipam") }}
+{{ $managementMode := $spec.managementMode | default "self" }}
+{{ $deletionPolicy := $spec.deletionPolicy | default "Delete" }}
+{{ $managementPolicies := $spec.managementPolicies | default (list "*") }}
+
+{{ $forProvider := $spec.forProvider | default (dict) }}
+{{ $scope := $forProvider.scope | default "delegated-organization" }}
+{{ $isGlobalScope := eq $scope "global-organization" }}
+{{ $delegatedAdmin := $forProvider.delegatedAdminAccountRef | default (dict) }}
+{{ $delegatedAdminName := $delegatedAdmin.name | default $organizationName | default "default" }}
+{{ $providerConfigName := $spec.providerConfigName | default $delegatedAdminName | default "default" }}
+{{ $homeRegion := $forProvider.homeRegion | default "" }}
+{{ $requestedRegions := $forProvider.operatingRegions | default (list) }}
+
+{{ if and (not $homeRegion) (gt (len $requestedRegions) 0) }}
+  {{- $homeRegion = index $requestedRegions 0 }}
+{{ end }}
+{{ if not $homeRegion }}
+  {{- $homeRegion = "us-east-1" }}
+{{ end }}
+
+{{ if not $requestedRegions }}
+  {{- $requestedRegions = list $homeRegion }}
+{{ end }}
+
+{{ $ipamPools := $forProvider.pools | default (list) }}
+{{ $ipamHasPools := gt (len $ipamPools) 0 }}
+
+{{ $defaultAWSTags := dict "hops" "true" "organization" $organizationName }}
+
+{{ $ipamRegionSet := dict }}
+{{ $_ := set $ipamRegionSet $homeRegion true }}
+{{ range $requestedRegions }}
+  {{- $_ = set $ipamRegionSet . true }}
+{{ end }}
+{{ range $ipamPools }}
+  {{- $poolRegion := .region | default .locale | default $homeRegion }}
+  {{- if $poolRegion }}
+    {{- $_ = set $ipamRegionSet $poolRegion true }}
+  {{- end }}
+{{ end }}
+{{ $ipamRegionList := sortAlpha (keys $ipamRegionSet) }}

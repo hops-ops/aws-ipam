@@ -1,0 +1,57 @@
+# code: language=yaml
+# yaml-language-server: $schema=../../.up/json/models/index.schema.json
+
+{{ if $ipamHasPools }}
+
+---
+
+apiVersion: vpc.aws.m.upbound.io/v1beta1
+kind: IPAM
+metadata:
+  name: {{ printf "%s-ipam" $organizationName }}
+  annotations:
+    {{ setResourceNameAnnotation "ipam" }}
+  labels:
+    hops.ops.com.ai/organization: {{ $organizationName }}
+spec:
+  deletionPolicy: {{ $deletionPolicy }}
+  managementPolicies: {{ toYaml $managementPolicies | nindent 4 }}
+  forProvider:
+    description: {{ printf "%s IPAM" $organizationName }}
+    region: {{ $homeRegion }}
+    operatingRegions:
+      {{- range $ipamRegionList }}
+      - regionName: {{ . }}
+      {{- end }}
+    tags:
+      {{- toYaml $defaultAWSTags | nindent 6 }}
+  providerConfigRef:
+    kind: ProviderConfig
+    name: {{ $providerConfigName }}
+
+---
+
+apiVersion: vpc.aws.m.upbound.io/v1beta1
+kind: IPAMScope
+metadata:
+  name: {{ printf "%s-ipam-private" $organizationName }}
+  annotations:
+    {{ setResourceNameAnnotation "ipam-private-scope" }}
+  labels:
+    hops.ops.com.ai/organization: {{ $organizationName }}
+    hops.ops.com.ai/ipam-scope: default-private
+spec:
+  deletionPolicy: {{ $deletionPolicy }}
+  managementPolicies: {{ toYaml $managementPolicies | nindent 4 }}
+  forProvider:
+    description: Default private scope for {{ $organizationName }}
+    ipamIdRef:
+      name: {{ printf "%s-ipam" $organizationName }}
+    region: {{ $homeRegion }}
+    tags:
+      {{- toYaml $defaultAWSTags | nindent 6 }}
+  providerConfigRef:
+    kind: ProviderConfig
+    name: {{ $providerConfigName }}
+
+{{ end }}

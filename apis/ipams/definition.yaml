@@ -1,0 +1,216 @@
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: ipams.aws.hops.ops.com.ai
+spec:
+  scope: Namespaced
+  group: aws.hops.ops.com.ai
+  names:
+    kind: IPAM
+    plural: ipams
+  versions:
+  - name: v1alpha1
+    referenceable: true
+    served: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        description: IPAM defines AWS VPC IP Address Manager primitives for downstream compositions.
+        required:
+        - spec
+        properties:
+          spec:
+            type: object
+            description: Desired state for the IPAM resources.
+            required:
+            - forProvider
+            properties:
+              managementMode:
+                type: string
+                description: Controls whether Hops or the caller manages downstream consumers. Defaults to self.
+                enum:
+                - self
+                - managed
+                default: self
+              deletionPolicy:
+                type: string
+                description: Delete or Orphan composed resources when this IPAM is removed.
+                default: Delete
+              managementPolicies:
+                type: array
+                description: Management operations permitted on composed resources. Use ["*"] for full management or omit Delete to orphan.
+                items:
+                  type: string
+                  enum:
+                  - "*"
+                  - Create
+                  - Observe
+                  - Update
+                  - Delete
+                  - LateInitialize
+                default:
+                - "*"
+              providerConfigName:
+                type: string
+                description: ProviderConfig used for AWS API operations. Defaults to the delegated admin account ref.
+              organizationName:
+                type: string
+                description: Logical name used for tagging and naming rendered resources. Defaults to metadata.name.
+              forProvider:
+                type: object
+                description: Provider-specific settings.
+                required:
+                - delegatedAdminAccountRef
+                - pools
+                properties:
+                  scope:
+                    type: string
+                    description: Controls whether the IPAM only serves the delegated organization or shares pools globally.
+                    enum:
+                    - delegated-organization
+                    - global-organization
+                    default: delegated-organization
+                  delegatedAdminAccountRef:
+                    type: object
+                    description: Reference to the Account composite that granted IPAM delegated admin permissions.
+                    required:
+                    - name
+                    properties:
+                      name:
+                        type: string
+                        description: Name of the Account composite resource.
+                  homeRegion:
+                    type: string
+                    description: AWS region hosting the IPAM instance. Defaults to the first operatingRegion or us-east-1.
+                  operatingRegions:
+                    type: array
+                    description: AWS regions where the IPAM is allowed to allocate CIDRs. Defaults to the homeRegion.
+                    items:
+                      type: string
+                  pools:
+                    type: array
+                    description: Declarative list of IPAM pools and CIDR assignments.
+                    minItems: 1
+                    items:
+                      type: object
+                      required:
+                      - name
+                      - cidr
+                      properties:
+                        name:
+                          type: string
+                          description: Unique identifier for the pool used in downstream selectors.
+                        cidr:
+                          type: string
+                          description: Base CIDR carved from the pool.
+                        cidrBlock:
+                          type: string
+                          description: Deprecated alias for cidr maintained for backwards compatibility.
+                        region:
+                          type: string
+                          description: AWS region that owns the pool. Defaults to aws.config.region.
+                        locale:
+                          type: string
+                          description: Locale owning the pool. Defaults to the pool region.
+                        description:
+                          type: string
+                          description: Optional description attached to the pool.
+                        allocationDefaultNetmaskLength:
+                          type: integer
+                          minimum: 0
+                          description: Default netmask length assigned to new allocations.
+                        allocationNetmaskLength:
+                          type: integer
+                          minimum: 0
+                          description: Shortcut for allocationDefaultNetmaskLength; kept for backwards compatibility.
+                        allocationMinNetmaskLength:
+                          type: integer
+                          minimum: 0
+                          description: Minimum netmask length allowed within the pool.
+                        allocationMaxNetmaskLength:
+                          type: integer
+                          minimum: 0
+                          description: Maximum netmask length allowed within the pool.
+                        labels:
+                          type: object
+                          description: Labels propagated to VpcIpamPool resources so other compositions can select pools.
+                          x-kubernetes-preserve-unknown-fields: true
+                        tags:
+                          type: object
+                          description: Extra AWS tags merged with the default tag map.
+                          x-kubernetes-preserve-unknown-fields: true
+                        ramShareTargets:
+                          type: array
+                          description: AWS principals that should receive RAM shares when scope=global-organization.
+                          items:
+                            type: object
+                            properties:
+                              account:
+                                type: string
+                                description: Twelve digit AWS account ID that should accept the RAM share.
+                              ou:
+                                type: string
+                                description: AWS Organizations OU identifier or path that should accept the RAM share.
+                            minProperties: 1
+          status:
+            type: object
+            description: Observed state of the rendered IPAM resources.
+            properties:
+              organizationName:
+                type: string
+              managementMode:
+                type: string
+              scope:
+                type: string
+              ipam:
+                type: object
+                properties:
+                  region:
+                    type: string
+                  arn:
+                    type: string
+                  id:
+                    type: string
+                  scope:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      arn:
+                        type: string
+                      name:
+                        type: string
+                  pools:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                        region:
+                          type: string
+                        locale:
+                          type: string
+                        id:
+                          type: string
+                        arn:
+                          type: string
+                        cidr:
+                          type: string
+                        allocationDefaultNetmaskLength:
+                          type: integer
+                        allocationMinNetmaskLength:
+                          type: integer
+                        allocationMaxNetmaskLength:
+                          type: integer
+              ramShares:
+                type: array
+                description: Observed RAM share metadata keyed by pool.
+                items:
+                  type: object
+                  properties:
+                    poolName:
+                      type: string
+                    shareArn:
+                      type: string
+        

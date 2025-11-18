@@ -1,0 +1,81 @@
+# code: language=yaml
+# yaml-language-server: $schema=../../.up/json/models/index.schema.json
+
+{{ if and $ipamHasPools $isGlobalScope }}
+  {{- range $pool := $ipamPools }}
+    {{- $poolName := $pool.name }}
+    {{- $poolShareTargets := $pool.ramShareTargets | default (list) }}
+    {{- if and $poolName (gt (len $poolShareTargets) 0) }}
+      {{- $poolKey := printf "ipam-pool-%s" $poolName }}
+      {{- $poolReady := get $resourceReadiness $poolKey | default false }}
+      {{- $poolStatus := get $observedPools $poolName | default (dict) }}
+      {{- $poolArn := $poolStatus.arn | default "" }}
+      {{- $poolTags := merge $defaultAWSTags ($pool.tags | default (dict)) }}
+      {{- $shareResourceName := printf "%s-share-%s" $organizationName $poolName }}
+      {{- $shareResourceKey := printf "ram-share-%s" $poolName }}
+      {{- $shareReady := get $resourceReadiness $shareResourceKey | default false }}
+
+      {{- if and $poolReady $poolArn }}
+
+---
+
+apiVersion: ram.aws.m.upbound.io/v1beta1
+kind: ResourceShare
+metadata:
+  name: {{ $shareResourceName }}
+  annotations:
+    {{ setResourceNameAnnotation (printf "ram-share-%s" $poolName) }}
+  labels:
+    hops.ops.com.ai/organization: {{ $organizationName }}
+    aws.hops.ops.com.ai/ipam-pool: {{ $poolName }}
+spec:
+  deletionPolicy: {{ $deletionPolicy }}
+  managementPolicies: {{ toYaml $managementPolicies | nindent 4 }}
+  forProvider:
+    allowExternalPrincipals: false
+    name: {{ printf "%s-%s" $organizationName $poolName }}
+    region: {{ $homeRegion }}
+    resourceArns:
+      - {{ $poolArn }}
+    tags:
+      {{- toYaml $poolTags | nindent 6 }}
+  providerConfigRef:
+    kind: ProviderConfig
+    name: {{ $providerConfigName }}
+
+      {{- end }}
+
+      {{- if and $shareReady (gt (len $poolShareTargets) 0) }}
+        {{- range $index, $target := $poolShareTargets }}
+          {{- $principal := $target.account | default $target.ou | default "" }}
+          {{- if $principal }}
+
+---
+
+apiVersion: ram.aws.m.upbound.io/v1beta1
+kind: PrincipalAssociation
+metadata:
+  name: {{ printf "%s-principal-%s-%d" $organizationName $poolName $index }}
+  annotations:
+    {{ setResourceNameAnnotation (printf "ram-principal-%s-%d" $poolName $index) }}
+  labels:
+    hops.ops.com.ai/organization: {{ $organizationName }}
+    aws.hops.ops.com.ai/ipam-pool: {{ $poolName }}
+spec:
+  deletionPolicy: {{ $deletionPolicy }}
+  managementPolicies: {{ toYaml $managementPolicies | nindent 4 }}
+  forProvider:
+    principal: {{ $principal }}
+    region: {{ $homeRegion }}
+    resourceShareArnRef:
+      name: {{ $shareResourceName }}
+  providerConfigRef:
+    kind: ProviderConfig
+    name: {{ $providerConfigName }}
+
+          {{- end }}
+        {{- end }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+{{ end }}

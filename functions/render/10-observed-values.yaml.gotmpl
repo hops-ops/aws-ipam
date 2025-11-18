@@ -1,0 +1,99 @@
+# code: language=yaml
+
+{{ $observed := $.observed.resources | default (dict) }}
+{{ $resourceReadiness := dict }}
+
+{{ range $name, $entry := $observed }}
+  {{- $resourceReady := false }}
+  {{- $resource := $entry.resource | default (dict) }}
+  {{- $status := $resource.status | default (dict) }}
+  {{- $conditions := $status.conditions | default (list) }}
+  {{- range $conditions }}
+    {{- $conditionType := default "" (get . "type") }}
+    {{- $conditionStatus := default "" (get . "status") }}
+    {{- if and (eq $conditionType "Ready") (eq $conditionStatus "True") }}
+      {{- $resourceReady = true }}
+    {{- end }}
+  {{- end }}
+  {{- $resourceReadiness = merge $resourceReadiness (dict $name $resourceReady) }}
+{{ end }}
+
+{{ $ipamObservation := get $observed "ipam" }}
+{{ $ipamScopeObservation := get $observed "ipam-private-scope" }}
+{{ $observedIpamId := "" }}
+{{ $observedIpamArn := "" }}
+{{ $observedIpamScopeId := "" }}
+{{ $observedIpamScopeArn := "" }}
+
+{{ with $ipamObservation }}
+  {{- $resource := .resource | default (dict) }}
+  {{- $status := $resource.status | default (dict) }}
+  {{- $atProvider := $status.atProvider | default (dict) }}
+  {{- $id := $atProvider.id | default "" }}
+  {{- $arn := $atProvider.arn | default "" }}
+  {{- if $id }}
+    {{- $observedIpamId = $id }}
+  {{- end }}
+  {{- if $arn }}
+    {{- $observedIpamArn = $arn }}
+  {{- end }}
+{{ end }}
+
+{{ with $ipamScopeObservation }}
+  {{- $resource := .resource | default (dict) }}
+  {{- $status := $resource.status | default (dict) }}
+  {{- $atProvider := $status.atProvider | default (dict) }}
+  {{- $id := $atProvider.id | default "" }}
+  {{- $arn := $atProvider.arn | default "" }}
+  {{- if $id }}
+    {{- $observedIpamScopeId = $id }}
+  {{- end }}
+  {{- if $arn }}
+    {{- $observedIpamScopeArn = $arn }}
+  {{- end }}
+{{ end }}
+
+{{ $observedPools := dict }}
+{{ range $pool := $ipamPools }}
+  {{- $poolName := $pool.name }}
+  {{- if $poolName }}
+    {{- $poolKey := printf "ipam-pool-%s" $poolName }}
+    {{- $poolObservation := get $observed $poolKey }}
+    {{- $poolId := "" }}
+    {{- $poolArn := "" }}
+    {{- with $poolObservation }}
+      {{- $resource := .resource | default (dict) }}
+      {{- $status := $resource.status | default (dict) }}
+      {{- $atProvider := $status.atProvider | default (dict) }}
+      {{- $candidateId := $atProvider.id | default "" }}
+      {{- $candidateArn := $atProvider.arn | default "" }}
+      {{- if $candidateId }}
+        {{- $poolId = $candidateId }}
+      {{- end }}
+      {{- if $candidateArn }}
+        {{- $poolArn = $candidateArn }}
+      {{- end }}
+    {{- end }}
+    {{- $_ := set $observedPools $poolName (dict "id" $poolId "arn" $poolArn) }}
+  {{- end }}
+{{ end }}
+
+{{ $ramShares := dict }}
+{{ range $pool := $ipamPools }}
+  {{- $poolName := $pool.name }}
+  {{- if $poolName }}
+    {{- $shareKey := printf "ram-share-%s" $poolName }}
+    {{- $shareObservation := get $observed $shareKey }}
+    {{- $shareArn := "" }}
+    {{- with $shareObservation }}
+      {{- $resource := .resource | default (dict) }}
+      {{- $status := $resource.status | default (dict) }}
+      {{- $atProvider := $status.atProvider | default (dict) }}
+      {{- $candidateArn := $atProvider.arn | default "" }}
+      {{- if $candidateArn }}
+        {{- $shareArn = $candidateArn }}
+      {{- end }}
+    {{- end }}
+    {{- $_ := set $ramShares $poolName (dict "arn" $shareArn) }}
+  {{- end }}
+{{ end }}

@@ -1,0 +1,55 @@
+# code: language=yaml
+
+apiVersion: aws.hops.ops.com.ai/v1alpha1
+kind: IPAM
+status:
+  organizationName: {{ $organizationName }}
+  managementMode: {{ $managementMode }}
+  scope: {{ $scope }}
+  ipam:
+    name: {{ printf "%s-ipam" $organizationName }}
+    region: {{ $homeRegion }}
+    id: {{ $observedIpamId | default "" }}
+    arn: {{ $observedIpamArn | default "" }}
+    scope:
+      name: {{ printf "%s-ipam-private" $organizationName }}
+      id: {{ $observedIpamScopeId | default "" }}
+      arn: {{ $observedIpamScopeArn | default "" }}
+    pools:
+{{- range $pool := $ipamPools }}
+      {{- $poolName := $pool.name }}
+      {{- if $poolName }}
+        {{- $poolRegion := $pool.region | default $pool.locale | default $homeRegion }}
+        {{- $poolLocale := $pool.locale | default $poolRegion }}
+        {{- $poolStatus := get $observedPools $poolName | default (dict) }}
+        {{- $poolId := $poolStatus.id | default "" }}
+        {{- $poolArn := $poolStatus.arn | default "" }}
+        {{- $poolCidr := $pool.cidr | default $pool.cidrBlock }}
+      - name: {{ $poolName }}
+        region: {{ $poolRegion }}
+        locale: {{ $poolLocale }}
+        id: {{ $poolId }}
+        arn: {{ $poolArn }}
+        cidr: {{ $poolCidr }}
+        {{- if $pool.allocationDefaultNetmaskLength }}
+        allocationDefaultNetmaskLength: {{ $pool.allocationDefaultNetmaskLength }}
+        {{- else if $pool.allocationNetmaskLength }}
+        allocationDefaultNetmaskLength: {{ $pool.allocationNetmaskLength }}
+        {{- end }}
+        {{- if $pool.allocationMinNetmaskLength }}
+        allocationMinNetmaskLength: {{ $pool.allocationMinNetmaskLength }}
+        {{- end }}
+        {{- if $pool.allocationMaxNetmaskLength }}
+        allocationMaxNetmaskLength: {{ $pool.allocationMaxNetmaskLength }}
+        {{- end }}
+      {{- end }}
+{{- end }}
+  ramShares:
+{{- range $pool := $ipamPools }}
+  {{- $poolName := $pool.name }}
+  {{- if $poolName }}
+    {{- $shareStatus := get $ramShares $poolName | default (dict) }}
+  - poolName: {{ $poolName }}
+    shareArn: {{ $shareStatus.arn | default "" }}
+  {{- end }}
+{{- end }}
