@@ -10,7 +10,7 @@ _org_name = "ipam-" + _now
 _composite_name = "e2e-ipam-" + _now
 _provider_config_name = "ipam-provider-" + _now
 
-_creds = file.read("aws-creds")
+_creds = file.read("secrets/aws-creds")
 _base64_creds = base64.encode(_creds)
 
 _items = [
