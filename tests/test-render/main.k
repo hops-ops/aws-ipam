@@ -48,7 +48,6 @@ _items = [
                     spec: {
                         managementPolicies: ["*"]
                         forProvider: {
-                            cidr: "10.0.0.0/8"
                             locale: "us-west-2"
                             allocationDefaultNetmaskLength: 16
                             tags: {
@@ -135,7 +134,6 @@ _items = [
                     }
                     spec: {
                         forProvider: {
-                            cidr: "10.8.0.0/14"
                             allocationDefaultNetmaskLength: 20
                             locale: "us-west-2"
                         }

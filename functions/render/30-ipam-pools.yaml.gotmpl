@@ -29,7 +29,6 @@ spec:
   managementPolicies: {{ toYaml $managementPolicies | nindent 4 }}
   forProvider:
     addressFamily: ipv4
-    cidr: {{ $poolCidr }}
     description: {{ $poolDescription }}
     ipamScopeIdRef:
       name: {{ printf "%s-ipam-private" $organizationName }}
@@ -67,8 +66,6 @@ spec:
     ipamPoolIdRef:
       name: {{ $poolResourceName }}
     region: {{ $poolRegion }}
-    tags:
-      {{- toYaml $poolTags | nindent 6 }}
   providerConfigRef:
     kind: ProviderConfig
     name: {{ $providerConfigName }}

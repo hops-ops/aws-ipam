@@ -33,7 +33,7 @@ test:
 validate: validate-composition validate-examples
 
 validate-composition:
-	up composition render $(COMPOSITION) $(EXAMPLE_DEFAULT) --include-full-xr --quiet >/dev/null
+	up composition render $(COMPOSITION) $(EXAMPLE_DEFAULT) --include-full-xr --quiet | crossplane beta validate $(XRD_DIR) --error-on-missing-schemas -
 
 validate-examples:
 	crossplane beta validate $(XRD_DIR) examples/ipams
