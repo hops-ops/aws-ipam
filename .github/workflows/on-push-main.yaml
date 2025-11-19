@@ -47,7 +47,8 @@ jobs:
       - test
       - e2e
     uses: unbounded-tech/workflow-vnext-tag/.github/workflows/workflow.yaml@v1.19.1
-    secrets: inherit
+    secrets:
+      DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
     with:
       useDeployKey: true
       yqPatches: |
