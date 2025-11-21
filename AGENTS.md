@@ -40,8 +40,11 @@ Whenever you add schema knobs, update the examples, README, and tests in the sam
 
 - Minimal example: verifies tags, labels, management policies, and that the IPAM only registers one operating region when the pools are single-region.
 - Multi-region example: ensures the IPAM registers both regions, per-pool locales are honored, and allocation guard rails flow through.
+- Usage example: seeds `observedResources` so the render pipeline believes the IPAM, pools, CIDRs, and RAM shares are Ready. This lets the protection `Usage` resources render without real cloud state.
 
 Add new examples under `examples/ipams/` before writing assertions. Keep tests focused—assert only the fields that should never change.
+
+When templates gate behavior on observed readiness (for example usage wiring), add synthetic entries to `observedResources` that mirror the managed resource’s `apiVersion`, `kind`, metadata, and Ready condition. Include both `gotemplating.fn.crossplane.io/composition-resource-name` and `crossplane.io/composition-resource-name` annotations so `functions/render/10-observed-values.yaml.gotmpl` can match them against the names emitted via `setResourceNameAnnotation`.
 
 Run `make test` (or `up test run tests/test-*`) after touching templates or schema.
 
