@@ -1,0 +1,155 @@
+# code: language=yaml
+# yaml-language-server: $schema=../../.up/json/models/index.schema.json
+
+{{ $ipamResourceName := printf "%s-ipam" $organizationName }}
+{{ $ipamScopeResourceName := printf "%s-ipam-private" $organizationName }}
+{{ $ipamReady := get $resourceReadiness "ipam" | default false }}
+{{ $ipamScopeReady := get $resourceReadiness "ipam-private-scope" | default false }}
+
+{{ if and $ipamHasPools $ipamReady $ipamScopeReady }}
+
+---
+
+apiVersion: protection.crossplane.io/v1beta1
+kind: Usage
+metadata:
+  name: {{ printf "%s-ipam-scope-usage" $organizationName }}
+  annotations:
+    {{ setResourceNameAnnotation "ipam-scope-usage" }}
+spec:
+  replayDeletion: true
+  by:
+    apiVersion: ec2.aws.m.upbound.io/v1beta1
+    kind: VPCIpamScope
+    resourceRef:
+      name: {{ $ipamScopeResourceName }}
+  of:
+    apiVersion: ec2.aws.m.upbound.io/v1beta1
+    kind: VPCIpam
+    resourceRef:
+      name: {{ $ipamResourceName }}
+
+{{ end }}
+
+{{ range $pool := $ipamPools }}
+  {{- $poolName := $pool.name }}
+  {{- $poolResourceName := printf "%s-%s" $organizationName $poolName }}
+  {{- $poolKey := printf "ipam-pool-%s" $poolName }}
+  {{- $poolReady := get $resourceReadiness $poolKey | default false }}
+  {{- $poolCidrKey := printf "ipam-pool-cidr-%s" $poolName }}
+  {{- $poolCidrReady := get $resourceReadiness $poolCidrKey | default false }}
+  {{- if and $poolName $poolReady $ipamScopeReady }}
+
+---
+
+apiVersion: protection.crossplane.io/v1beta1
+kind: Usage
+metadata:
+  name: {{ printf "%s-%s-pool-usage" $organizationName $poolName }}
+  annotations:
+    {{ setResourceNameAnnotation (printf "ipam-pool-usage-%s" $poolName) }}
+spec:
+  replayDeletion: true
+  by:
+    apiVersion: ec2.aws.m.upbound.io/v1beta1
+    kind: VPCIpamPool
+    resourceRef:
+      name: {{ $poolResourceName }}
+  of:
+    apiVersion: ec2.aws.m.upbound.io/v1beta1
+    kind: VPCIpamScope
+    resourceRef:
+      name: {{ $ipamScopeResourceName }}
+
+  {{- end }}
+
+  {{- if and $poolName $poolReady $poolCidrReady }}
+
+---
+
+apiVersion: protection.crossplane.io/v1beta1
+kind: Usage
+metadata:
+  name: {{ printf "%s-%s-pool-cidr-usage" $organizationName $poolName }}
+  annotations:
+    {{ setResourceNameAnnotation (printf "ipam-pool-cidr-usage-%s" $poolName) }}
+spec:
+  replayDeletion: true
+  by:
+    apiVersion: ec2.aws.m.upbound.io/v1beta1
+    kind: VPCIpamPoolCidr
+    resourceRef:
+      name: {{ printf "%s-%s-cidr" $organizationName $poolName }}
+  of:
+    apiVersion: ec2.aws.m.upbound.io/v1beta1
+    kind: VPCIpamPool
+    resourceRef:
+      name: {{ $poolResourceName }}
+
+  {{- end }}
+
+  {{- if and $isGlobalScope $poolName }}
+    {{- $shareTargets := $pool.ramShareTargets | default (list) }}
+    {{- if gt (len $shareTargets) 0 }}
+      {{- $shareResourceName := printf "%s-share-%s" $organizationName $poolName }}
+      {{- $shareKey := printf "ram-share-%s" $poolName }}
+      {{- $shareReady := get $resourceReadiness $shareKey | default false }}
+
+      {{- if and $poolReady $shareReady }}
+
+---
+
+apiVersion: protection.crossplane.io/v1beta1
+kind: Usage
+metadata:
+  name: {{ printf "%s-%s-share-usage" $organizationName $poolName }}
+  annotations:
+    {{ setResourceNameAnnotation (printf "ipam-share-usage-%s" $poolName) }}
+spec:
+  replayDeletion: true
+  by:
+    apiVersion: ram.aws.m.upbound.io/v1beta1
+    kind: ResourceShare
+    resourceRef:
+      name: {{ $shareResourceName }}
+  of:
+    apiVersion: ec2.aws.m.upbound.io/v1beta1
+    kind: VPCIpamPool
+    resourceRef:
+      name: {{ $poolResourceName }}
+
+      {{- end }}
+
+      {{- range $index, $_ := $shareTargets }}
+        {{- $principalResourceName := printf "%s-principal-%s-%d" $organizationName $poolName $index }}
+        {{- $principalKey := printf "ram-principal-%s-%d" $poolName $index }}
+        {{- $principalReady := get $resourceReadiness $principalKey | default false }}
+
+        {{- if and $shareReady $principalReady }}
+
+---
+
+apiVersion: protection.crossplane.io/v1beta1
+kind: Usage
+metadata:
+  name: {{ printf "%s-%s-principal-%d-usage" $organizationName $poolName $index }}
+  annotations:
+    {{ setResourceNameAnnotation (printf "ipam-principal-usage-%s-%d" $poolName $index) }}
+spec:
+  replayDeletion: true
+  by:
+    apiVersion: ram.aws.m.upbound.io/v1beta1
+    kind: PrincipalAssociation
+    resourceRef:
+      name: {{ $principalResourceName }}
+  of:
+    apiVersion: ram.aws.m.upbound.io/v1beta1
+    kind: ResourceShare
+    resourceRef:
+      name: {{ $shareResourceName }}
+
+        {{- end }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+{{ end }}

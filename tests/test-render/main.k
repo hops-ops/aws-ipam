@@ -76,6 +76,394 @@ _items = [
         }
     },
     metav1alpha1.CompositionTest{
+        metadata.name: "test-ipam-usages"
+        spec = {
+            compositionPath: "apis/ipams/composition.yaml"
+            xrPath: "examples/ipams/example-multi-region.yaml"
+            xrdPath: "apis/ipams/definition.yaml"
+            timeoutSeconds: 120
+            validate: True
+            observedResources: [
+                {
+                    name: "ipam"
+                    resource: {
+                        status: {
+                            conditions: [
+                                {
+                                    type: "Ready"
+                                    status: "True"
+                                }
+                            ]
+                            atProvider: {
+                                id: "ipam-1234567890"
+                                arn: "arn:aws:ec2:us-east-1:123456789012:ipam/ipam-1234567890"
+                            }
+                        }
+                    }
+                },
+                {
+                    name: "ipam-private-scope"
+                    resource: {
+                        status: {
+                            conditions: [
+                                {
+                                    type: "Ready"
+                                    status: "True"
+                                }
+                            ]
+                            atProvider: {
+                                id: "ipam-scope-1234567890"
+                                arn: "arn:aws:ec2:us-east-1:123456789012:ipam-scope/ipam-scope-1234567890"
+                            }
+                        }
+                    }
+                },
+                {
+                    name: "ipam-pool-workloads-east"
+                    resource: {
+                        status: {
+                            conditions: [
+                                {
+                                    type: "Ready"
+                                    status: "True"
+                                }
+                            ]
+                            atProvider: {
+                                id: "ipam-pool-east"
+                                arn: "arn:aws:ec2:us-east-1:123456789012:ipam-pool/ipam-pool-east"
+                            }
+                        }
+                    }
+                },
+                {
+                    name: "ipam-pool-cidr-workloads-east"
+                    resource: {
+                        status: {
+                            conditions: [
+                                {
+                                    type: "Ready"
+                                    status: "True"
+                                }
+                            ]
+                            atProvider: {
+                                id: "ipam-pool-cidr-east"
+                            }
+                        }
+                    }
+                },
+                {
+                    name: "ipam-pool-workloads-west"
+                    resource: {
+                        status: {
+                            conditions: [
+                                {
+                                    type: "Ready"
+                                    status: "True"
+                                }
+                            ]
+                            atProvider: {
+                                id: "ipam-pool-west"
+                                arn: "arn:aws:ec2:us-west-2:123456789012:ipam-pool/ipam-pool-west"
+                            }
+                        }
+                    }
+                },
+                {
+                    name: "ipam-pool-cidr-workloads-west"
+                    resource: {
+                        status: {
+                            conditions: [
+                                {
+                                    type: "Ready"
+                                    status: "True"
+                                }
+                            ]
+                            atProvider: {
+                                id: "ipam-pool-cidr-west"
+                            }
+                        }
+                    }
+                },
+                {
+                    name: "ram-share-workloads-east"
+                    resource: {
+                        status: {
+                            conditions: [
+                                {
+                                    type: "Ready"
+                                    status: "True"
+                                }
+                            ]
+                            atProvider: {
+                                arn: "arn:aws:ram::123456789012:resource-share/rs-east"
+                            }
+                        }
+                    }
+                },
+                {
+                    name: "ram-share-workloads-west"
+                    resource: {
+                        status: {
+                            conditions: [
+                                {
+                                    type: "Ready"
+                                    status: "True"
+                                }
+                            ]
+                            atProvider: {
+                                arn: "arn:aws:ram::123456789012:resource-share/rs-west"
+                            }
+                        }
+                    }
+                },
+                {
+                    name: "ram-principal-workloads-east-0"
+                    resource: {
+                        status: {
+                            conditions: [
+                                {
+                                    type: "Ready"
+                                    status: "True"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    name: "ram-principal-workloads-west-0"
+                    resource: {
+                        status: {
+                            conditions: [
+                                {
+                                    type: "Ready"
+                                    status: "True"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+            assertResources: [
+                {
+                    apiVersion: "protection.crossplane.io/v1beta1"
+                    kind: "Usage"
+                    metadata: {
+                        name: "workloads-ipam-scope-usage"
+                    }
+                    spec: {
+                        replayDeletion: True
+                        by: {
+                            apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                            kind: "VPCIpamScope"
+                            resourceRef: {
+                                name: "workloads-ipam-private"
+                            }
+                        }
+                        of: {
+                            apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                            kind: "VPCIpam"
+                            resourceRef: {
+                                name: "workloads-ipam"
+                            }
+                        }
+                    }
+                },
+                {
+                    apiVersion: "protection.crossplane.io/v1beta1"
+                    kind: "Usage"
+                    metadata: {
+                        name: "workloads-workloads-east-pool-usage"
+                    }
+                    spec: {
+                        replayDeletion: True
+                        by: {
+                            apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                            kind: "VPCIpamPool"
+                            resourceRef: {
+                                name: "workloads-workloads-east"
+                            }
+                        }
+                        of: {
+                            apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                            kind: "VPCIpamScope"
+                            resourceRef: {
+                                name: "workloads-ipam-private"
+                            }
+                        }
+                    }
+                },
+                {
+                    apiVersion: "protection.crossplane.io/v1beta1"
+                    kind: "Usage"
+                    metadata: {
+                        name: "workloads-workloads-west-pool-usage"
+                    }
+                    spec: {
+                        replayDeletion: True
+                        by: {
+                            apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                            kind: "VPCIpamPool"
+                            resourceRef: {
+                                name: "workloads-workloads-west"
+                            }
+                        }
+                        of: {
+                            apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                            kind: "VPCIpamScope"
+                            resourceRef: {
+                                name: "workloads-ipam-private"
+                            }
+                        }
+                    }
+                },
+                {
+                    apiVersion: "protection.crossplane.io/v1beta1"
+                    kind: "Usage"
+                    metadata: {
+                        name: "workloads-workloads-east-pool-cidr-usage"
+                    }
+                    spec: {
+                        replayDeletion: True
+                        by: {
+                            apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                            kind: "VPCIpamPoolCidr"
+                            resourceRef: {
+                                name: "workloads-workloads-east-cidr"
+                            }
+                        }
+                        of: {
+                            apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                            kind: "VPCIpamPool"
+                            resourceRef: {
+                                name: "workloads-workloads-east"
+                            }
+                        }
+                    }
+                },
+                {
+                    apiVersion: "protection.crossplane.io/v1beta1"
+                    kind: "Usage"
+                    metadata: {
+                        name: "workloads-workloads-west-pool-cidr-usage"
+                    }
+                    spec: {
+                        replayDeletion: True
+                        by: {
+                            apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                            kind: "VPCIpamPoolCidr"
+                            resourceRef: {
+                                name: "workloads-workloads-west-cidr"
+                            }
+                        }
+                        of: {
+                            apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                            kind: "VPCIpamPool"
+                            resourceRef: {
+                                name: "workloads-workloads-west"
+                            }
+                        }
+                    }
+                },
+                {
+                    apiVersion: "protection.crossplane.io/v1beta1"
+                    kind: "Usage"
+                    metadata: {
+                        name: "workloads-workloads-east-share-usage"
+                    }
+                    spec: {
+                        replayDeletion: True
+                        by: {
+                            apiVersion: "ram.aws.m.upbound.io/v1beta1"
+                            kind: "ResourceShare"
+                            resourceRef: {
+                                name: "workloads-share-workloads-east"
+                            }
+                        }
+                        of: {
+                            apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                            kind: "VPCIpamPool"
+                            resourceRef: {
+                                name: "workloads-workloads-east"
+                            }
+                        }
+                    }
+                },
+                {
+                    apiVersion: "protection.crossplane.io/v1beta1"
+                    kind: "Usage"
+                    metadata: {
+                        name: "workloads-workloads-west-share-usage"
+                    }
+                    spec: {
+                        replayDeletion: True
+                        by: {
+                            apiVersion: "ram.aws.m.upbound.io/v1beta1"
+                            kind: "ResourceShare"
+                            resourceRef: {
+                                name: "workloads-share-workloads-west"
+                            }
+                        }
+                        of: {
+                            apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                            kind: "VPCIpamPool"
+                            resourceRef: {
+                                name: "workloads-workloads-west"
+                            }
+                        }
+                    }
+                },
+                {
+                    apiVersion: "protection.crossplane.io/v1beta1"
+                    kind: "Usage"
+                    metadata: {
+                        name: "workloads-workloads-east-principal-0-usage"
+                    }
+                    spec: {
+                        replayDeletion: True
+                        by: {
+                            apiVersion: "ram.aws.m.upbound.io/v1beta1"
+                            kind: "PrincipalAssociation"
+                            resourceRef: {
+                                name: "workloads-principal-workloads-east-0"
+                            }
+                        }
+                        of: {
+                            apiVersion: "ram.aws.m.upbound.io/v1beta1"
+                            kind: "ResourceShare"
+                            resourceRef: {
+                                name: "workloads-share-workloads-east"
+                            }
+                        }
+                    }
+                },
+                {
+                    apiVersion: "protection.crossplane.io/v1beta1"
+                    kind: "Usage"
+                    metadata: {
+                        name: "workloads-workloads-west-principal-0-usage"
+                    }
+                    spec: {
+                        replayDeletion: True
+                        by: {
+                            apiVersion: "ram.aws.m.upbound.io/v1beta1"
+                            kind: "PrincipalAssociation"
+                            resourceRef: {
+                                name: "workloads-principal-workloads-west-0"
+                            }
+                        }
+                        of: {
+                            apiVersion: "ram.aws.m.upbound.io/v1beta1"
+                            kind: "ResourceShare"
+                            resourceRef: {
+                                name: "workloads-share-workloads-west"
+                            }
+                        }
+                    }
+                }
+            ]
+        }
+    },
+    metav1alpha1.CompositionTest{
         metadata.name: "test-ipam-multi-region"
         spec = {
             compositionPath: "apis/ipams/composition.yaml"
