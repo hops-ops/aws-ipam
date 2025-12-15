@@ -4,12 +4,13 @@ on:
     branches:
     - main
     paths:
-      - 'apis/**'
-      - 'examples/**'
-      - 'tests/**'
-      - 'functions/**'
       - '.github/workflows/on-push-main.yaml'
       - '.github/workflows/on-version-tagged.yaml'
+      - '.gitops/**'
+      - 'apis/**'
+      - 'examples/**'
+      - 'functions/**'
+      - 'tests/**'
       - 'upbound.yaml'
 
 permissions:

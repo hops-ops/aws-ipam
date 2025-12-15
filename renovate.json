@@ -1,6 +1,46 @@
 {
-  "extends": ["config:recommended", ":dependencyDashboard"],
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":dependencyDashboard"
+  ],
   "crossplane": {
-    "fileMatch": ["\\.ya?ml$", "\\.yaml\\.gotmpl$"]
-  }
+    "managerFilePatterns": [
+      "/\\.yaml$/",
+      "/\\.yaml\\.gotmpl$/"
+    ]
+  },
+  "packageRules": [
+    {
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["/^hops-ops\\//"],
+      "enabled": false
+    }
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "apis/**/configuration.yaml",
+        "upbound.yaml"
+      ],
+      "matchStrings": [
+        "\\s*(configuration|function|package|provider):\\s*ghcr\\.io/hops-ops/(?<depName>.*?)\\s*version:\\s*(\"|')>=(?<currentValue>.*?)(\"|')\\s*"
+      ],
+      "datasourceTemplate": "github-releases",
+      "packageNameTemplate": "hops-ops/{{depName}}"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "apis/**/configuration.yaml",
+        "upbound.yaml"
+      ],
+      "matchStrings": [
+        "\\s*(configuration|function|package|provider):\\s*(?<registryUrl>.*)\\/(?<depName>.*)\\s*version:\\s*(\"|')>=(?<currentValue>.*?)(\"|')\\s*"
+      ],
+      "datasourceTemplate": "docker",
+      "registryUrlTemplate": "https://{{registryUrl}}"
+    }
+  ]
 }
