@@ -8,15 +8,18 @@
 {{ $managementMode := $spec.managementMode | default "self" }}
 {{ $managementPolicies := $spec.managementPolicies | default (list "*") }}
 
-{{ $forProvider := $spec.forProvider | default (dict) }}
-{{ $scope := $forProvider.scope | default "private" }}
+{{ $ipam := $spec.ipam | default (dict) }}
+{{ $ipamExternalName := $ipam.externalName | default "" }}
+{{ $ipamForProvider := $ipam.forProvider | default (dict) }}
+
+{{ $scope := $spec.scope | default "private" }}
 {{ $isPrivateScope := eq $scope "private" }}
 {{ $isGlobalScope := eq $scope "global-organization" }}
-{{ $delegatedAdmin := $forProvider.delegatedAdminAccountRef | default (dict) }}
+{{ $delegatedAdmin := $spec.delegatedAdminAccountRef | default (dict) }}
 {{ $delegatedAdminName := $delegatedAdmin.name | default "" }}
 {{ $providerConfigName := $spec.providerConfigName | default $delegatedAdminName | default "default" }}
-{{ $homeRegion := $forProvider.homeRegion | default "" }}
-{{ $requestedRegions := $forProvider.operatingRegions | default (list) }}
+{{ $homeRegion := $spec.homeRegion | default "" }}
+{{ $requestedRegions := $spec.operatingRegions | default (list) }}
 
 {{ if and (not $homeRegion) (gt (len $requestedRegions) 0) }}
   {{- $homeRegion = index $requestedRegions 0 }}
@@ -29,7 +32,7 @@
   {{- $requestedRegions = list $homeRegion }}
 {{ end }}
 
-{{ $ipamPools := $forProvider.pools | default (list) }}
+{{ $ipamPools := $spec.pools | default (list) }}
 {{ $ipamHasPools := gt (len $ipamPools) 0 }}
 
 # Check if any pools require a public scope (for IPv6 public pools)

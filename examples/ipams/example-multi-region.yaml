@@ -5,36 +5,35 @@ metadata:
   namespace: example-env
 spec:
   organizationName: workloads
-  forProvider:
-    scope: global-organization
-    delegatedAdminAccountRef:
-      name: hops-shared-services
-    homeRegion: us-east-1
-    operatingRegions:
-      - us-east-1
-      - us-west-2
-    pools:
-      - name: workloads-east
-        region: us-east-1
-        cidr: 10.4.0.0/14
-        allocationDefaultNetmaskLength: 20
-        allocationMinNetmaskLength: 20
-        allocationMaxNetmaskLength: 26
-        labels:
-          hops.ops.com.ai/role: application
-        tags:
-          region: east
-        ramShareTargets:
-          - ou: workloads/prod
-      - name: workloads-west
-        region: us-west-2
-        locale: us-west-2
-        cidr: 10.8.0.0/14
-        allocationNetmaskLength: 20
-        labels:
-          hops.ops.com.ai/role: application
-          hops.ops.com.ai/region: west
-        tags:
-          region: west
-        ramShareTargets:
-          - account: "123456789012"
+  scope: global-organization
+  delegatedAdminAccountRef:
+    name: hops-shared-services
+  homeRegion: us-east-1
+  operatingRegions:
+    - us-east-1
+    - us-west-2
+  pools:
+    - name: workloads-east
+      region: us-east-1
+      cidr: 10.4.0.0/14
+      allocationDefaultNetmaskLength: 20
+      allocationMinNetmaskLength: 20
+      allocationMaxNetmaskLength: 26
+      labels:
+        hops.ops.com.ai/role: application
+      tags:
+        region: east
+      ramShareTargets:
+        - ou: workloads/prod
+    - name: workloads-west
+      region: us-west-2
+      locale: us-west-2
+      cidr: 10.8.0.0/14
+      allocationNetmaskLength: 20
+      labels:
+        hops.ops.com.ai/role: application
+        hops.ops.com.ai/region: west
+      tags:
+        region: west
+      ramShareTargets:
+        - account: "123456789012"

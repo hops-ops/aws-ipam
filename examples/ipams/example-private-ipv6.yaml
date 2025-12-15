@@ -8,44 +8,43 @@ metadata:
 spec:
   organizationName: my-org
   providerConfigName: default
-  forProvider:
-    scope: private
-    homeRegion: us-east-1
-    operatingRegions:
-      - us-east-1
-    pools:
-      # IPv4 pool
-      - name: ipv4
-        addressFamily: ipv4
-        region: us-east-1
-        cidr: 10.0.0.0/8
-        allocationDefaultNetmaskLength: 20
-        allocationMinNetmaskLength: 16
-        allocationMaxNetmaskLength: 24
-        description: IPv4 pool for VPCs
+  scope: private
+  homeRegion: us-east-1
+  operatingRegions:
+    - us-east-1
+  pools:
+    # IPv4 pool
+    - name: ipv4
+      addressFamily: ipv4
+      region: us-east-1
+      cidr: 10.0.0.0/8
+      allocationDefaultNetmaskLength: 20
+      allocationMinNetmaskLength: 16
+      allocationMaxNetmaskLength: 24
+      description: IPv4 pool for VPCs
 
-      # IPv6 Public Pool (Amazon-provided for EKS Auto Mode)
-      - name: ipv6-public
-        addressFamily: ipv6
-        scope: public
-        region: us-east-1
-        locale: us-east-1
-        amazonProvidedIpv6CidrBlock: true
-        publicIpSource: amazon
-        awsService: ec2
-        allocationDefaultNetmaskLength: 56
-        allocationMinNetmaskLength: 52
-        allocationMaxNetmaskLength: 60
-        description: Public IPv6 pool (Amazon GUA)
+    # IPv6 Public Pool (Amazon-provided for EKS Auto Mode)
+    - name: ipv6-public
+      addressFamily: ipv6
+      scope: public
+      region: us-east-1
+      locale: us-east-1
+      amazonProvidedIpv6CidrBlock: true
+      publicIpSource: amazon
+      awsService: ec2
+      allocationDefaultNetmaskLength: 56
+      allocationMinNetmaskLength: 52
+      allocationMaxNetmaskLength: 60
+      description: Public IPv6 pool (Amazon GUA)
 
-      # IPv6 Private Pool (ULA)
-      - name: ipv6-private
-        addressFamily: ipv6
-        scope: private
-        region: us-east-1
-        locale: us-east-1
-        cidr: fd00:my:app::/48
-        allocationDefaultNetmaskLength: 56
-        allocationMinNetmaskLength: 48
-        allocationMaxNetmaskLength: 64
-        description: Private IPv6 pool (ULA)
+    # IPv6 Private Pool (ULA)
+    - name: ipv6-private
+      addressFamily: ipv6
+      scope: private
+      region: us-east-1
+      locale: us-east-1
+      cidr: fd00:my:app::/48
+      allocationDefaultNetmaskLength: 56
+      allocationMinNetmaskLength: 48
+      allocationMaxNetmaskLength: 64
+      description: Private IPv6 pool (ULA)

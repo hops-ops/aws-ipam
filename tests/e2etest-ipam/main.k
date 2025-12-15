@@ -30,26 +30,24 @@ _items = [
                         providerConfigName: _provider_config_name
                         managementPolicies: ["*"]
                         managementMode: "self"
-                        forProvider: {
-                            delegatedAdminAccountRef: {
-                                name: _org_name
-                            }
-                            homeRegion: "us-east-2"
-                            operatingRegions: ["us-east-2"]
-                            pools: [
-                                {
-                                    name: "shared"
-                                    cidr: "10.16.0.0/16"
-                                    allocationDefaultNetmaskLength: 24
-                                    labels: {
-                                        purpose: "e2e"
-                                    }
-                                    tags: {
-                                        owner: "ipam-e2e"
-                                    }
-                                }
-                            ]
+                        delegatedAdminAccountRef: {
+                            name: _org_name
                         }
+                        homeRegion: "us-east-2"
+                        operatingRegions: ["us-east-2"]
+                        pools: [
+                            {
+                                name: "shared"
+                                cidr: "10.16.0.0/16"
+                                allocationDefaultNetmaskLength: 24
+                                labels: {
+                                    purpose: "e2e"
+                                }
+                                tags: {
+                                    owner: "ipam-e2e"
+                                }
+                            }
+                        ]
                     }
                 }
             ]

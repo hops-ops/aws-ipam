@@ -11,6 +11,9 @@ metadata:
   name: {{ printf "%s-ipam" $organizationName }}
   annotations:
     {{ setResourceNameAnnotation "ipam" }}
+    {{- if $ipamExternalName }}
+    crossplane.io/external-name: {{ $ipamExternalName | quote }}
+    {{- end }}
   labels:
     hops.ops.com.ai/organization: {{ $organizationName }}
 spec:
@@ -24,6 +27,9 @@ spec:
       {{- end }}
     tags:
       {{- toYaml $defaultAWSTags | nindent 6 }}
+    {{- with $ipamForProvider }}
+    {{ toYaml . | nindent 4 }}
+    {{- end }}
   providerConfigRef:
     kind: ProviderConfig
     name: {{ $providerConfigName }}
