@@ -15,6 +15,13 @@
       "matchDatasources": ["docker"],
       "matchPackageNames": ["/hops-ops/"],
       "enabled": false
+    },
+    {
+      "matchPackageNames": [
+        "/provider-family-aws/",
+        "/provider-aws-.*/"
+      ],
+      "groupName": "aws-providers"
     }
   ],
   "customManagers": [
