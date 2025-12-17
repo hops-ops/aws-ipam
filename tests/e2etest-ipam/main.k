@@ -46,19 +46,20 @@ _test_pool_name = "aws-ipam-" + _now
 # After running once, get IDs with:
 #   aws ec2 describe-ipams --query 'Ipams[*].[IpamId,Tags]'
 #   aws ec2 describe-ipam-pools --query 'IpamPools[*].[IpamPoolId,Description]'
+#   aws ec2 describe-ipam-pool-cidrs --ipam-pool-id <pool-id> --query 'IpamPoolCidrs[*].IpamPoolCidrId'
 #
 _ipam_external_name = "ipam-0573c7815d0a36e00"
 
-_env_ipam_external_name = file.read("secrets/env/ipam_external_name") if file.exists("secrets/env/ipam_external_name") else ""
-print("env_ipam_external_name: " + _env_ipam_external_name)
-
+# IPv4 pool
 _ipv4_pool_external_name = "ipam-pool-0a82c73b97dc0dabb"
+_ipv4_cidr_external_name = "ipam-pool-cidr-0f72f599bd1d04b0e81a40c1f889a90ba"
+
+# IPv6 public pool (no cidrExternalName - uses amazonProvidedIpv6CidrBlock)
 _ipv6_public_pool_external_name = "ipam-pool-06b3ec78deea8bcb9"
 
-_env_ipv4_pool_external_name = file.read("secrets/env/ipv4_pool_external_name") if file.exists("secrets/env/ipv4_pool_external_name") else ""
-_env_ipv6_public_pool_external_name = file.read("secrets/env/ipv6_public_pool_external_name") if file.exists("secrets/env/ipv6_public_pool_external_name") else ""
-print("env_ipv4_pool_external_name: " + _env_ipv4_pool_external_name)
-print("env_ipv6_public_pool_external_name: " + _env_ipv6_public_pool_external_name)
+# IPv6 private pool (ULA)
+_ipv6_private_pool_external_name = "ipam-pool-0decd6c5216660c74"
+_ipv6_private_cidr_external_name = ""  # e.g., ipam-pool-cidr-...
 
 _items = [
     metav1alpha1.E2ETest{
@@ -96,6 +97,8 @@ _items = [
                                 description: "IPv4 pool for VPCs"
                                 if _ipv4_pool_external_name:
                                     externalName: _ipv4_pool_external_name
+                                if _ipv4_cidr_external_name:
+                                    cidrExternalName: _ipv4_cidr_external_name
                                 labels: {
                                     "address-family": "ipv4"
                                 }
@@ -141,6 +144,10 @@ _items = [
                                 allocationMinNetmaskLength: 48
                                 allocationMaxNetmaskLength: 64
                                 description: "Private IPv6 pool (ULA)"
+                                if _ipv6_private_pool_external_name:
+                                    externalName: _ipv6_private_pool_external_name
+                                if _ipv6_private_cidr_external_name:
+                                    cidrExternalName: _ipv6_private_cidr_external_name
                                 labels: {
                                     "address-family": "ipv6"
                                     "ipv6-type": "private"

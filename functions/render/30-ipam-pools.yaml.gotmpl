@@ -109,6 +109,7 @@ spec:
 
     {{- /* Create VPCIpamPoolCidr if we have explicit CIDR or netmaskLength (not amazon-provided) */}}
     {{- $poolNetmaskLength := $pool.netmaskLength }}
+    {{- $poolCidrExternalName := $pool.cidrExternalName | default "" }}
     {{- $needsCidrResource := or $poolCidr $poolNetmaskLength }}
     {{- if $needsCidrResource }}
 ---
@@ -119,6 +120,9 @@ metadata:
   name: {{ printf "%s-cidr" $poolResourceName }}
   annotations:
     {{ setResourceNameAnnotation (printf "ipam-pool-cidr-%s" $poolName) }}
+    {{- if $poolCidrExternalName }}
+    crossplane.io/external-name: {{ $poolCidrExternalName | quote }}
+    {{- end }}
   labels:
     {{- toYaml $poolLabels | nindent 4 }}
 spec:

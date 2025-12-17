@@ -162,6 +162,11 @@ spec:
                       description: |
                         Netmask length for auto-assigned CIDR. Conflicts with cidr.
                         Use this for IPv6 ULA pools where AWS assigns from fd00::/8 range.
+                    cidrExternalName:
+                      type: string
+                      description: |
+                        VPCIpamPoolCidr ID to adopt (e.g., ipam-pool-cidr-093c1a210229b4f42ad21c2cfbf12d75d).
+                        When set, Crossplane imports the existing CIDR instead of creating a new one.
                     amazonProvidedIpv6CidrBlock:
                       type: boolean
                       description: Request Amazon-provided IPv6 CIDR block (for public IPv6 pools).
