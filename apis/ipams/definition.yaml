@@ -52,19 +52,15 @@ spec:
               organizationName:
                 type: string
                 description: Logical name used for tagging and naming rendered resources. Defaults to metadata.name.
-              ipam:
+              externalName:
+                type: string
+                description: |
+                  IPAM ID to adopt (e.g., ipam-0123456789abcdef0).
+                  When set, Crossplane imports the existing IPAM instead of creating a new one.
+              forProvider:
                 type: object
-                description: Optional settings for the VPCIpam resource itself.
-                properties:
-                  externalName:
-                    type: string
-                    description: |
-                      IPAM ID to adopt (e.g., ipam-0123456789abcdef0).
-                      When set, Crossplane imports the existing IPAM instead of creating a new one.
-                  forProvider:
-                    type: object
-                    description: Override any forProvider field on the VPCIpam resource. Keys here overwrite template defaults.
-                    x-kubernetes-preserve-unknown-fields: true
+                description: Override any forProvider field on the VPCIpam resource. Keys here overwrite template defaults.
+                x-kubernetes-preserve-unknown-fields: true
               scope:
                 type: string
                 description: |

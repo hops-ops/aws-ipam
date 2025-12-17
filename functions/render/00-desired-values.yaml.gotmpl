@@ -8,9 +8,8 @@
 {{ $managementMode := $spec.managementMode | default "self" }}
 {{ $managementPolicies := $spec.managementPolicies | default (list "*") }}
 
-{{ $ipam := $spec.ipam | default (dict) }}
-{{ $ipamExternalName := $ipam.externalName | default "" }}
-{{ $ipamForProvider := $ipam.forProvider | default (dict) }}
+{{ $ipamExternalName := $spec.externalName | default "" }}
+{{ $ipamForProvider := $spec.forProvider | default (dict) }}
 
 {{ $scope := $spec.scope | default "private" }}
 {{ $isPrivateScope := eq $scope "private" }}
