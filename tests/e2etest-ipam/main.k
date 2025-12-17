@@ -9,7 +9,7 @@
 # Pools created (persistent):
 # - ipv4: 10.0.0.0/8 for VPC IPv4 CIDRs
 # - ipv6-public: Amazon-provided GUA for internet-routable workloads
-# - ipv6-private: fd00:1::/48 ULA for internal services
+# Note: ULA (fd00::/8) CIDRs are NOT supported by AWS IPAM - only Amazon-provided GUA or BYOIP
 #
 # Pools created (ephemeral - deleted after test):
 # - aws-ipam-<timestamp>: test pool to verify create/delete cycle
@@ -52,16 +52,13 @@ _ipam_external_name = "ipam-0573c7815d0a36e00"
 _env_ipam_external_name = file.read("secrets/env/ipam_external_name") if file.exists("secrets/env/ipam_external_name") else ""
 print("env_ipam_external_name: " + _env_ipam_external_name)
 
-_ipv4_pool_external_name = ""
-_ipv6_public_pool_external_name = ""
-_ipv6_private_pool_external_name = ""
+_ipv4_pool_external_name = "ipam-pool-0a82c73b97dc0dabb"
+_ipv6_public_pool_external_name = "ipam-pool-06b3ec78deea8bcb9"
 
 _env_ipv4_pool_external_name = file.read("secrets/env/ipv4_pool_external_name") if file.exists("secrets/env/ipv4_pool_external_name") else ""
 _env_ipv6_public_pool_external_name = file.read("secrets/env/ipv6_public_pool_external_name") if file.exists("secrets/env/ipv6_public_pool_external_name") else ""
-_env_ipv6_private_pool_external_name = file.read("secrets/env/ipv6_private_pool_external_name") if file.exists("secrets/env/ipv6_private_pool_external_name") else ""
 print("env_ipv4_pool_external_name: " + _env_ipv4_pool_external_name)
 print("env_ipv6_public_pool_external_name: " + _env_ipv6_public_pool_external_name)
-print("env_ipv6_private_pool_external_name: " + _env_ipv6_private_pool_external_name)
 
 _items = [
     metav1alpha1.E2ETest{
@@ -131,21 +128,19 @@ _items = [
                                     purpose: "vpc-ipv6-public"
                                 }
                             },
-                            # IPv6 Private Pool (ULA for internal services)
+                            # IPv6 Private Pool (ULA - AWS auto-assigns from fd00::/8)
                             {
                                 name: "ipv6-private"
                                 addressFamily: "ipv6"
                                 scope: "private"
                                 region: _home_region
                                 locale: _home_region
-                                cidr: "fd00:1::/48"
+                                netmaskLength: 48  # AWS auto-assigns ULA CIDR
                                 managementPolicies: _persist
                                 allocationDefaultNetmaskLength: 56
                                 allocationMinNetmaskLength: 48
                                 allocationMaxNetmaskLength: 64
                                 description: "Private IPv6 pool (ULA)"
-                                if _ipv6_private_pool_external_name:
-                                    externalName: _ipv6_private_pool_external_name
                                 labels: {
                                     "address-family": "ipv6"
                                     "ipv6-type": "private"

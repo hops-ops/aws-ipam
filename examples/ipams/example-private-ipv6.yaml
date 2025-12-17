@@ -1,5 +1,9 @@
-# Private IPAM example with IPv4 and IPv6 pools
+# IPAM example with IPv4 and IPv6 pools
 # For single-account setups without AWS Organizations
+#
+# Note: AWS IPAM does NOT support IPv6 ULA (fd00::/8) CIDRs.
+# For IPv6, use Amazon-provided GUA (scope: public with amazonProvidedIpv6CidrBlock)
+# or BYOIP (bring your own registered IPv6 ranges).
 apiVersion: aws.hops.ops.com.ai/v1alpha1
 kind: IPAM
 metadata:
@@ -13,7 +17,7 @@ spec:
   operatingRegions:
     - us-east-1
   pools:
-    # IPv4 pool
+    # IPv4 pool - RFC 1918 private addresses are supported
     - name: ipv4
       addressFamily: ipv4
       region: us-east-1
@@ -23,7 +27,8 @@ spec:
       allocationMaxNetmaskLength: 24
       description: IPv4 pool for VPCs
 
-    # IPv6 Public Pool (Amazon-provided for EKS Auto Mode)
+    # IPv6 Public Pool (Amazon-provided GUA for EKS Auto Mode)
+    # This is the recommended approach for IPv6 in AWS
     - name: ipv6-public
       addressFamily: ipv6
       scope: public
@@ -36,15 +41,3 @@ spec:
       allocationMinNetmaskLength: 52
       allocationMaxNetmaskLength: 60
       description: Public IPv6 pool (Amazon GUA)
-
-    # IPv6 Private Pool (ULA)
-    - name: ipv6-private
-      addressFamily: ipv6
-      scope: private
-      region: us-east-1
-      locale: us-east-1
-      cidr: fd00:1::/48
-      allocationDefaultNetmaskLength: 56
-      allocationMinNetmaskLength: 48
-      allocationMaxNetmaskLength: 64
-      description: Private IPv6 pool (ULA)

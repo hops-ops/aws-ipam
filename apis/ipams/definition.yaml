@@ -152,7 +152,16 @@ spec:
                       x-kubernetes-preserve-unknown-fields: true
                     cidr:
                       type: string
-                      description: Base CIDR for the pool. Required for IPv4, optional for IPv6 with amazonProvidedIpv6CidrBlock.
+                      description: |
+                        Base CIDR for the pool. Conflicts with netmaskLength.
+                        For IPv6 ULA pools, use netmaskLength instead to let AWS auto-assign from fd00::/8.
+                    netmaskLength:
+                      type: integer
+                      minimum: 0
+                      maximum: 128
+                      description: |
+                        Netmask length for auto-assigned CIDR. Conflicts with cidr.
+                        Use this for IPv6 ULA pools where AWS assigns from fd00::/8 range.
                     amazonProvidedIpv6CidrBlock:
                       type: boolean
                       description: Request Amazon-provided IPv6 CIDR block (for public IPv6 pools).

@@ -107,8 +107,10 @@ spec:
     kind: ProviderConfig
     name: {{ $providerConfigName }}
 
-    {{- /* Only create VPCIpamPoolCidr if we have an explicit CIDR (not amazon-provided) */}}
-    {{- if $poolCidr }}
+    {{- /* Create VPCIpamPoolCidr if we have explicit CIDR or netmaskLength (not amazon-provided) */}}
+    {{- $poolNetmaskLength := $pool.netmaskLength }}
+    {{- $needsCidrResource := or $poolCidr $poolNetmaskLength }}
+    {{- if $needsCidrResource }}
 ---
 
 apiVersion: ec2.aws.m.upbound.io/v1beta1
@@ -122,7 +124,11 @@ metadata:
 spec:
   managementPolicies: {{ toYaml $poolMgmtPolicies | nindent 4 }}
   forProvider:
+    {{- if $poolCidr }}
     cidr: {{ $poolCidr }}
+    {{- else if $poolNetmaskLength }}
+    netmaskLength: {{ $poolNetmaskLength }}
+    {{- end }}
     ipamPoolIdRef:
       name: {{ $poolResourceName }}
     region: {{ $poolRegion }}
