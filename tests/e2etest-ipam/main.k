@@ -47,11 +47,14 @@ _test_pool_name = "aws-ipam-" + _now
 #   aws ec2 describe-ipams --query 'Ipams[*].[IpamId,Tags]'
 #   aws ec2 describe-ipam-pools --query 'IpamPools[*].[IpamPoolId,Description]'
 #
-# _ipam_external_name = "ipam-0123456789abcdef0"
-_ipam_external_name = file.read("secrets/env/ipam_external_name") if file.exists("secrets/env/ipam_external_name") else ""
-_ipv4_pool_external_name = file.read("secrets/env/ipv4_pool_external_name") if file.exists("secrets/env/ipv4_pool_external_name") else ""
-_ipv6_public_pool_external_name = file.read("secrets/env/ipv6_public_pool_external_name") if file.exists("secrets/env/ipv6_public_pool_external_name") else ""
-_ipv6_private_pool_external_name = file.read("secrets/env/ipv6_private_pool_external_name") if file.exists("secrets/env/ipv6_private_pool_external_name") else ""
+_ipam_external_name = "ipam-0573c7815d0a36e00"
+
+_env_ipam_external_name = file.read("secrets/env/ipam_external_name") if file.exists("secrets/env/ipam_external_name") else ""
+print("env_ipam_external_name: " + _env_ipam_external_name)
+
+# _ipv4_pool_external_name = file.read("secrets/env/ipv4_pool_external_name") if file.exists("secrets/env/ipv4_pool_external_name") else ""
+# _ipv6_public_pool_external_name = file.read("secrets/env/ipv6_public_pool_external_name") if file.exists("secrets/env/ipv6_public_pool_external_name") else ""
+# _ipv6_private_pool_external_name = file.read("secrets/env/ipv6_private_pool_external_name") if file.exists("secrets/env/ipv6_private_pool_external_name") else ""
 
 _items = [
     metav1alpha1.E2ETest{
