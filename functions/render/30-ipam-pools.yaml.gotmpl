@@ -13,9 +13,10 @@
   {{- $poolExternalName := $pool.externalName | default "" }}
   {{- $poolMgmtPolicies := $pool.managementPolicies | default $managementPolicies }}
   {{- $poolForProvider := $pool.forProvider | default (dict) }}
+  {{- $poolNetmaskLength := $pool.netmaskLength }}
 
-  {{- /* Pool is valid if it has a name AND (has cidr OR is amazon-provided IPv6) */}}
-  {{- $hasValidCidr := or $poolCidr $amazonProvided }}
+  {{- /* Pool is valid if it has a name AND (has cidr OR netmaskLength OR is amazon-provided IPv6) */}}
+  {{- $hasValidCidr := or $poolCidr $poolNetmaskLength $amazonProvided }}
 
   {{- /* Determine scope strategy:
        - scopeRef set: use custom scope via ipamScopeIdRef (no gating)
@@ -108,7 +109,6 @@ spec:
     name: {{ $providerConfigName }}
 
     {{- /* Create VPCIpamPoolCidr if we have explicit CIDR or netmaskLength (not amazon-provided) */}}
-    {{- $poolNetmaskLength := $pool.netmaskLength }}
     {{- $poolCidrExternalName := $pool.cidrExternalName | default "" }}
     {{- $needsCidrResource := or $poolCidr $poolNetmaskLength }}
     {{- if $needsCidrResource }}

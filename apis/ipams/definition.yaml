@@ -165,7 +165,8 @@ spec:
                     cidrExternalName:
                       type: string
                       description: |
-                        VPCIpamPoolCidr ID to adopt (e.g., ipam-pool-cidr-093c1a210229b4f42ad21c2cfbf12d75d).
+                        VPCIpamPoolCidr external name to adopt. Format: cidr_pool-id
+                        (e.g., 10.0.0.0/8_ipam-pool-0123456789abcdef0).
                         When set, Crossplane imports the existing CIDR instead of creating a new one.
                     amazonProvidedIpv6CidrBlock:
                       type: boolean
