@@ -11,10 +11,8 @@ status:
     region: {{ $homeRegion | quote }}
     id: {{ $observedIpamId | default "" | quote }}
     arn: {{ $observedIpamArn | default "" | quote }}
-    scope:
-      name: {{ printf "%s-ipam-private" $organizationName | quote }}
-      id: {{ $observedIpamScopeId | default "" | quote }}
-      arn: {{ $observedIpamScopeArn | default "" | quote }}
+    privateDefaultScopeId: {{ $observedPrivateDefaultScopeId | default "" | quote }}
+    publicDefaultScopeId: {{ $observedPublicDefaultScopeId | default "" | quote }}
     pools:
 {{- range $pool := $ipamPools }}
       {{- $poolName := $pool.name }}

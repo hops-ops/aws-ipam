@@ -88,6 +88,32 @@ spec:
                 description: AWS regions where the IPAM is allowed to allocate CIDRs. Defaults to the homeRegion.
                 items:
                   type: string
+              scopes:
+                type: array
+                description: |
+                  Optional custom IPAM scopes. By default, pools use the IPAM's built-in
+                  privateDefaultScope or publicDefaultScope. Define custom scopes here
+                  when you need isolated scope spaces (e.g., per-team isolation).
+                items:
+                  type: object
+                  required:
+                  - name
+                  properties:
+                    name:
+                      type: string
+                      description: Unique name for the scope, referenced by pools via scopeRef.
+                    externalName:
+                      type: string
+                      description: |
+                        IPAM Scope ID to adopt (e.g., ipam-scope-0123456789abcdef0).
+                        When set, Crossplane imports the existing scope instead of creating a new one.
+                    description:
+                      type: string
+                      description: Description for the scope.
+                    tags:
+                      type: object
+                      description: Extra AWS tags merged with the default tag map.
+                      x-kubernetes-preserve-unknown-fields: true
               pools:
                 type: array
                 description: Declarative list of IPAM pools and CIDR assignments.
@@ -148,10 +174,19 @@ spec:
                       description: AWS service for IPv6 allocation (ec2 for VPC/EC2).
                     scope:
                       type: string
-                      description: Pool scope (private or public). Defaults to private.
+                      description: |
+                        Pool scope type (private or public). Defaults to private.
+                        - private: Uses IPAM's privateDefaultScope (or custom scope via scopeRef)
+                        - public: Uses IPAM's publicDefaultScope (required for awsService: ec2)
                       enum:
                       - private
                       - public
+                    scopeRef:
+                      type: string
+                      description: |
+                        Reference to a custom scope defined in spec.scopes by name.
+                        When set, the pool uses this custom scope instead of the IPAM's default scope.
+                        Cannot be used with scope: public + awsService (public pools require AWS default scope).
                     region:
                       type: string
                       description: AWS region that owns the pool. Defaults to aws.config.region.
@@ -219,15 +254,12 @@ spec:
                     type: string
                   id:
                     type: string
-                  scope:
-                    type: object
-                    properties:
-                      id:
-                        type: string
-                      arn:
-                        type: string
-                      name:
-                        type: string
+                  privateDefaultScopeId:
+                    type: string
+                    description: IPAM's built-in default private scope ID.
+                  publicDefaultScopeId:
+                    type: string
+                    description: IPAM's built-in default public scope ID.
                   pools:
                     type: array
                     items:

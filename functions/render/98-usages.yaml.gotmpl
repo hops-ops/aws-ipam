@@ -2,53 +2,67 @@
 # yaml-language-server: $schema=../../.up/json/models/index.schema.json
 
 {{ $ipamResourceName := printf "%s-ipam" $organizationName }}
-{{ $ipamScopeResourceName := printf "%s-ipam-private" $organizationName }}
 {{ $ipamReady := get $resourceReadiness "ipam" | default false }}
-{{ $ipamScopeReady := get $resourceReadiness "ipam-private-scope" | default false }}
 
-{{ if and $ipamHasPools $ipamReady $ipamScopeReady }}
+{{- /* Custom scope usages - only when custom scopes are defined */}}
+{{ range $scope := $customScopes }}
+  {{- $scopeName := $scope.name }}
+  {{- $scopeResourceName := printf "%s-scope-%s" $organizationName $scopeName }}
+  {{- $scopeKey := printf "custom-scope-%s" $scopeName }}
+  {{- $scopeReady := get $resourceReadiness $scopeKey | default false }}
+
+  {{- if and $ipamReady $scopeReady }}
 
 ---
 
 apiVersion: protection.crossplane.io/v1beta1
 kind: Usage
 metadata:
-  name: {{ printf "of-ipam-%s-by-scope-%s" $ipamResourceName $ipamScopeResourceName }}
+  name: {{ printf "of-ipam-%s-by-scope-%s" $ipamResourceName $scopeResourceName }}
   annotations:
-    {{ setResourceNameAnnotation "ipam-scope-usage" }}
+    {{ setResourceNameAnnotation (printf "custom-scope-usage-%s" $scopeName) }}
 spec:
   replayDeletion: true
   by:
     apiVersion: ec2.aws.m.upbound.io/v1beta1
     kind: VPCIpamScope
     resourceRef:
-      name: {{ $ipamScopeResourceName }}
+      name: {{ $scopeResourceName }}
   of:
     apiVersion: ec2.aws.m.upbound.io/v1beta1
     kind: VPCIpam
     resourceRef:
       name: {{ $ipamResourceName }}
 
+  {{- end }}
 {{ end }}
 
 {{ range $pool := $ipamPools }}
   {{- $poolName := $pool.name }}
+  {{- $poolScopeRef := $pool.scopeRef | default "" }}
+  {{- $usesCustomScope := and $poolScopeRef (hasKey $customScopeNames $poolScopeRef) }}
   {{- $poolResourceName := printf "%s-%s" $organizationName $poolName }}
   {{- $poolCidrResourceName := printf "%s-%s-cidr" $organizationName $poolName }}
   {{- $poolKey := printf "ipam-pool-%s" $poolName }}
   {{- $poolReady := get $resourceReadiness $poolKey | default false }}
   {{- $poolCidrKey := printf "ipam-pool-cidr-%s" $poolName }}
   {{- $poolCidrReady := get $resourceReadiness $poolCidrKey | default false }}
-  {{- if and $poolName $poolReady $ipamScopeReady }}
+
+  {{- /* Pool-to-custom-scope usage - only for pools using custom scopes */}}
+  {{- if and $poolName $poolReady $usesCustomScope }}
+    {{- $scopeResourceName := printf "%s-scope-%s" $organizationName $poolScopeRef }}
+    {{- $scopeKey := printf "custom-scope-%s" $poolScopeRef }}
+    {{- $scopeReady := get $resourceReadiness $scopeKey | default false }}
+    {{- if $scopeReady }}
 
 ---
 
 apiVersion: protection.crossplane.io/v1beta1
 kind: Usage
 metadata:
-  name: {{ printf "of-ipam-scope-%s-by-pool-%s" $ipamScopeResourceName $poolResourceName }}
+  name: {{ printf "of-scope-%s-by-pool-%s" $scopeResourceName $poolResourceName }}
   annotations:
-    {{ setResourceNameAnnotation (printf "ipam-pool-usage-%s" $poolName) }}
+    {{ setResourceNameAnnotation (printf "ipam-pool-scope-usage-%s" $poolName) }}
 spec:
   replayDeletion: true
   by:
@@ -60,8 +74,9 @@ spec:
     apiVersion: ec2.aws.m.upbound.io/v1beta1
     kind: VPCIpamScope
     resourceRef:
-      name: {{ $ipamScopeResourceName }}
+      name: {{ $scopeResourceName }}
 
+    {{- end }}
   {{- end }}
 
   {{- if and $poolName $poolReady $poolCidrReady }}

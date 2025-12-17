@@ -19,11 +19,10 @@
 {{ end }}
 
 {{ $ipamObservation := get $observed "ipam" }}
-{{ $ipamScopeObservation := get $observed "ipam-private-scope" }}
 {{ $observedIpamId := "" }}
 {{ $observedIpamArn := "" }}
-{{ $observedIpamScopeId := "" }}
-{{ $observedIpamScopeArn := "" }}
+{{ $observedPublicDefaultScopeId := "" }}
+{{ $observedPrivateDefaultScopeId := "" }}
 
 {{ with $ipamObservation }}
   {{- $resource := .resource | default (dict) }}
@@ -31,25 +30,19 @@
   {{- $atProvider := $status.atProvider | default (dict) }}
   {{- $id := $atProvider.id | default "" }}
   {{- $arn := $atProvider.arn | default "" }}
+  {{- $publicDefaultScopeId := $atProvider.publicDefaultScopeId | default "" }}
+  {{- $privateDefaultScopeId := $atProvider.privateDefaultScopeId | default "" }}
   {{- if $id }}
     {{- $observedIpamId = $id }}
   {{- end }}
   {{- if $arn }}
     {{- $observedIpamArn = $arn }}
   {{- end }}
-{{ end }}
-
-{{ with $ipamScopeObservation }}
-  {{- $resource := .resource | default (dict) }}
-  {{- $status := $resource.status | default (dict) }}
-  {{- $atProvider := $status.atProvider | default (dict) }}
-  {{- $id := $atProvider.id | default "" }}
-  {{- $arn := $atProvider.arn | default "" }}
-  {{- if $id }}
-    {{- $observedIpamScopeId = $id }}
+  {{- if $publicDefaultScopeId }}
+    {{- $observedPublicDefaultScopeId = $publicDefaultScopeId }}
   {{- end }}
-  {{- if $arn }}
-    {{- $observedIpamScopeArn = $arn }}
+  {{- if $privateDefaultScopeId }}
+    {{- $observedPrivateDefaultScopeId = $privateDefaultScopeId }}
   {{- end }}
 {{ end }}
 

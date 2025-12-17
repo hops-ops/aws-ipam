@@ -34,13 +34,14 @@
 {{ $ipamPools := $spec.pools | default (list) }}
 {{ $ipamHasPools := gt (len $ipamPools) 0 }}
 
-# Check if any pools require a public scope (for IPv6 public pools)
-{{ $needsPublicScope := false }}
-{{ range $ipamPools }}
-  {{- $poolScope := .scope | default "private" }}
-  {{- if eq $poolScope "public" }}
-    {{- $needsPublicScope = true }}
-  {{- end }}
+# Custom scopes (optional - by default pools use IPAM's built-in default scopes)
+{{ $customScopes := $spec.scopes | default (list) }}
+{{ $hasCustomScopes := gt (len $customScopes) 0 }}
+
+# Build a map of custom scope names for quick lookup
+{{ $customScopeNames := dict }}
+{{ range $customScopes }}
+  {{- $_ := set $customScopeNames .name true }}
 {{ end }}
 
 {{ $defaultAWSTags := dict "hops" "true" "organization" $organizationName }}

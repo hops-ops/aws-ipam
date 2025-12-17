@@ -15,7 +15,7 @@ on:
       - 'upbound.yaml'
 
 env:
-  ipam_external_name: ""
+  ipam_external_name: "ipam-0573c7815d0a36e00"
   ipv4_pool_external_name: ""
   ipv6_public_pool_external_name: ""
   ipv6_private_pool_external_name: ""

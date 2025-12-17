@@ -7,6 +7,7 @@
   {{- $addressFamily := $pool.addressFamily | default "ipv4" }}
   {{- $amazonProvided := $pool.amazonProvidedIpv6CidrBlock | default false }}
   {{- $poolScope := $pool.scope | default "private" }}
+  {{- $poolScopeRef := $pool.scopeRef | default "" }}
   {{- $publicIpSource := $pool.publicIpSource | default "" }}
   {{- $awsService := $pool.awsService | default "" }}
   {{- $poolExternalName := $pool.externalName | default "" }}
@@ -16,7 +17,29 @@
   {{- /* Pool is valid if it has a name AND (has cidr OR is amazon-provided IPv6) */}}
   {{- $hasValidCidr := or $poolCidr $amazonProvided }}
 
-  {{- if and $poolName $hasValidCidr }}
+  {{- /* Determine scope strategy:
+       - scopeRef set: use custom scope via ipamScopeIdRef (no gating)
+       - scope: public: use IPAM's publicDefaultScopeId (needs IPAM observed)
+       - default (private): use IPAM's privateDefaultScopeId (needs IPAM observed)
+  */}}
+  {{- $isPublicPool := eq $poolScope "public" }}
+  {{- $usesCustomScope := and $poolScopeRef (hasKey $customScopeNames $poolScopeRef) }}
+
+  {{- /* Pools using default scopes need the IPAM to be Ready first */}}
+  {{- $canRenderPool := true }}
+  {{- if not $usesCustomScope }}
+    {{- if $isPublicPool }}
+      {{- if not $observedPublicDefaultScopeId }}
+        {{- $canRenderPool = false }}
+      {{- end }}
+    {{- else }}
+      {{- if not $observedPrivateDefaultScopeId }}
+        {{- $canRenderPool = false }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+
+  {{- if and $poolName $hasValidCidr $canRenderPool }}
     {{- $poolRegion := $pool.region | default $pool.locale | default $homeRegion }}
     {{- $poolLocale := $pool.locale | default $poolRegion }}
     {{- $poolLabels := merge (dict "hops.ops.com.ai/organization" $organizationName "aws.hops.ops.com.ai/ipam-pool" $poolName) ($pool.labels | default (dict)) }}
@@ -26,12 +49,6 @@
     {{- $allocationDefault := $pool.allocationDefaultNetmaskLength | default $pool.allocationNetmaskLength }}
     {{- $allocationMin := $pool.allocationMinNetmaskLength }}
     {{- $allocationMax := $pool.allocationMaxNetmaskLength }}
-
-    {{- /* Determine which scope to reference based on pool scope */}}
-    {{- $scopeRefName := printf "%s-ipam-private" $organizationName }}
-    {{- if eq $poolScope "public" }}
-      {{- $scopeRefName = printf "%s-ipam-public" $organizationName }}
-    {{- end }}
 
 ---
 
@@ -51,8 +68,17 @@ spec:
   forProvider:
     addressFamily: {{ $addressFamily }}
     description: {{ $poolDescription }}
+    {{- if $usesCustomScope }}
+    {{- /* Custom scope: reference via ipamScopeIdRef */}}
     ipamScopeIdRef:
-      name: {{ $scopeRefName }}
+      name: {{ printf "%s-scope-%s" $organizationName $poolScopeRef }}
+    {{- else if $isPublicPool }}
+    {{- /* Public pool: use IPAM's default public scope */}}
+    ipamScopeId: {{ $observedPublicDefaultScopeId }}
+    {{- else }}
+    {{- /* Private pool (default): use IPAM's default private scope */}}
+    ipamScopeId: {{ $observedPrivateDefaultScopeId }}
+    {{- end }}
     locale: {{ $poolLocale }}
     region: {{ $poolRegion }}
     {{- if $allocationDefault }}

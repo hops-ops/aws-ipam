@@ -43,7 +43,7 @@ spec:
       scope: private
       region: us-east-1
       locale: us-east-1
-      cidr: fd00:my:app::/48
+      cidr: fd00:1::/48
       allocationDefaultNetmaskLength: 56
       allocationMinNetmaskLength: 48
       allocationMaxNetmaskLength: 64

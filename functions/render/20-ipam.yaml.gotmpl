@@ -34,51 +34,38 @@ spec:
     kind: ProviderConfig
     name: {{ $providerConfigName }}
 
+{{- /* Custom scopes - only created when explicitly defined in spec.scopes */}}
+{{- /* By default, pools use the IPAM's built-in privateDefaultScope and publicDefaultScope */}}
+{{ range $scope := $customScopes }}
+  {{- $scopeName := $scope.name }}
+  {{- $scopeExternalName := $scope.externalName | default "" }}
+  {{- $scopeDescription := $scope.description | default (printf "Custom scope %s for %s" $scopeName $organizationName) }}
+  {{- $scopeTags := merge $defaultAWSTags ($scope.tags | default (dict)) }}
+  {{- $scopeResourceName := printf "%s-scope-%s" $organizationName $scopeName }}
+
 ---
 
 apiVersion: ec2.aws.m.upbound.io/v1beta1
 kind: VPCIpamScope
 metadata:
-  name: {{ printf "%s-ipam-private" $organizationName }}
+  name: {{ $scopeResourceName }}
   annotations:
-    {{ setResourceNameAnnotation "ipam-private-scope" }}
+    {{ setResourceNameAnnotation (printf "custom-scope-%s" $scopeName) }}
+    {{- if $scopeExternalName }}
+    crossplane.io/external-name: {{ $scopeExternalName | quote }}
+    {{- end }}
   labels:
     hops.ops.com.ai/organization: {{ $organizationName }}
-    hops.ops.com.ai/ipam-scope: default-private
+    hops.ops.com.ai/ipam-scope: {{ $scopeName }}
 spec:
   managementPolicies: {{ toYaml $managementPolicies | nindent 4 }}
   forProvider:
-    description: Default private scope for {{ $organizationName }}
+    description: {{ $scopeDescription }}
     ipamIdRef:
       name: {{ printf "%s-ipam" $organizationName }}
     region: {{ $homeRegion }}
     tags:
-      {{- toYaml $defaultAWSTags | nindent 6 }}
-  providerConfigRef:
-    kind: ProviderConfig
-    name: {{ $providerConfigName }}
-
-{{ if $needsPublicScope }}
----
-
-apiVersion: ec2.aws.m.upbound.io/v1beta1
-kind: VPCIpamScope
-metadata:
-  name: {{ printf "%s-ipam-public" $organizationName }}
-  annotations:
-    {{ setResourceNameAnnotation "ipam-public-scope" }}
-  labels:
-    hops.ops.com.ai/organization: {{ $organizationName }}
-    hops.ops.com.ai/ipam-scope: default-public
-spec:
-  managementPolicies: {{ toYaml $managementPolicies | nindent 4 }}
-  forProvider:
-    description: Default public scope for {{ $organizationName }}
-    ipamIdRef:
-      name: {{ printf "%s-ipam" $organizationName }}
-    region: {{ $homeRegion }}
-    tags:
-      {{- toYaml $defaultAWSTags | nindent 6 }}
+      {{- toYaml $scopeTags | nindent 6 }}
   providerConfigRef:
     kind: ProviderConfig
     name: {{ $providerConfigName }}

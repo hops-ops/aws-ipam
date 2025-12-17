@@ -9,7 +9,7 @@
 # Pools created (persistent):
 # - ipv4: 10.0.0.0/8 for VPC IPv4 CIDRs
 # - ipv6-public: Amazon-provided GUA for internet-routable workloads
-# - ipv6-private: fd00:hops::/48 ULA for internal services
+# - ipv6-private: fd00:1::/48 ULA for internal services
 #
 # Pools created (ephemeral - deleted after test):
 # - aws-ipam-<timestamp>: test pool to verify create/delete cycle
@@ -128,7 +128,7 @@ _items = [
                                 scope: "private"
                                 region: _home_region
                                 locale: _home_region
-                                cidr: "fd00:hops::/48"
+                                cidr: "fd00:1::/48"
                                 managementPolicies: _persist
                                 allocationDefaultNetmaskLength: 56
                                 allocationMinNetmaskLength: 48
