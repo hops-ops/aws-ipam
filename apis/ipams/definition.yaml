@@ -127,6 +127,12 @@ spec:
                     name:
                       type: string
                       description: Unique identifier for the pool used in downstream selectors.
+                    sourcePoolRef:
+                      type: string
+                      description: |
+                        Reference to a parent pool by name (within same IPAM).
+                        Creates a child pool that allocates from the parent's CIDR space.
+                        Use this for subnet pools that allocate from VPC pools.
                     externalName:
                       type: string
                       description: |

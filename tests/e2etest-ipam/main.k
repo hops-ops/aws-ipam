@@ -13,6 +13,7 @@
 #
 # Pools created (ephemeral - deleted after test):
 # - aws-ipam-<timestamp>: test pool to verify create/delete cycle
+# - aws-ipam-<timestamp>-child: child pool testing sourcePoolRef feature
 
 import base64
 import datetime
@@ -107,7 +108,7 @@ _items = [
                                     purpose: "vpc-ipv4"
                                 }
                             },
-                            # IPv6 Public Pool (Amazon-provided GUA for EKS/EC2)
+                            # IPv6 Public Pool (Amazon-provided GUA)
                             {
                                 name: "ipv6-public"
                                 addressFamily: "ipv6"
@@ -178,6 +179,29 @@ _items = [
                                 }
                                 tags: {
                                     purpose: "e2e-test"
+                                    "test-run": _now
+                                }
+                            },
+                            # Ephemeral child pool - tests sourcePoolRef feature
+                            # Creates a child pool that allocates from the parent's CIDR space
+                            {
+                                name: _test_pool_name + "-child"
+                                addressFamily: "ipv4"
+                                region: _home_region
+                                sourcePoolRef: _test_pool_name
+                                # Full management - gets deleted with parent
+                                managementPolicies: ["*"]
+                                allocationDefaultNetmaskLength: 28
+                                allocationMinNetmaskLength: 26
+                                allocationMaxNetmaskLength: 28
+                                description: "Ephemeral child pool - " + _test_pool_name + "-child"
+                                labels: {
+                                    "ephemeral": "true"
+                                    "test-run": _now
+                                    "parent-pool": _test_pool_name
+                                }
+                                tags: {
+                                    purpose: "e2e-test-child"
                                     "test-run": _now
                                 }
                             }

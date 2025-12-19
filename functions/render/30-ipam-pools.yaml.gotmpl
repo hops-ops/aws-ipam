@@ -1,13 +1,14 @@
 # code: language=yaml
 # yaml-language-server: $schema=../../.up/json/models/index.schema.json
 
-{{ range $pool := $ipamPools }}
+{{- range $pool := $ipamPools }}
   {{- $poolName := $pool.name }}
   {{- $poolCidr := $pool.cidr | default $pool.cidrBlock | default "" }}
   {{- $addressFamily := $pool.addressFamily | default "ipv4" }}
   {{- $amazonProvided := $pool.amazonProvidedIpv6CidrBlock | default false }}
   {{- $poolScope := $pool.scope | default "private" }}
   {{- $poolScopeRef := $pool.scopeRef | default "" }}
+  {{- $sourcePoolRef := $pool.sourcePoolRef | default "" }}
   {{- $publicIpSource := $pool.publicIpSource | default "" }}
   {{- $awsService := $pool.awsService | default "" }}
   {{- $poolExternalName := $pool.externalName | default "" }}
@@ -15,8 +16,9 @@
   {{- $poolForProvider := $pool.forProvider | default (dict) }}
   {{- $poolNetmaskLength := $pool.netmaskLength }}
 
-  {{- /* Pool is valid if it has a name AND (has cidr OR netmaskLength OR is amazon-provided IPv6) */}}
-  {{- $hasValidCidr := or $poolCidr $poolNetmaskLength $amazonProvided }}
+  {{- /* Pool is valid if it has a name AND (has cidr OR netmaskLength OR is amazon-provided IPv6 OR is child pool) */}}
+  {{- $isChildPool := ne $sourcePoolRef "" }}
+  {{- $hasValidCidr := or $poolCidr $poolNetmaskLength $amazonProvided $isChildPool }}
 
   {{- /* Determine scope strategy:
        - scopeRef set: use custom scope via ipamScopeIdRef (no gating)
@@ -46,13 +48,19 @@
     {{- $poolLabels := merge (dict "hops.ops.com.ai/organization" $organizationName "aws.hops.ops.com.ai/ipam-pool" $poolName) ($pool.labels | default (dict)) }}
     {{- $poolTags := merge $defaultAWSTags ($pool.tags | default (dict)) }}
     {{- $poolResourceName := printf "%s-%s" $organizationName $poolName }}
+    {{- $poolCidrResourceName := printf "%s-%s-cidr" $organizationName $poolName }}
     {{- $poolDescription := $pool.description | default (printf "%s pool for %s" $poolName $organizationName) }}
     {{- $allocationDefault := $pool.allocationDefaultNetmaskLength | default $pool.allocationNetmaskLength }}
     {{- $allocationMin := $pool.allocationMinNetmaskLength }}
     {{- $allocationMax := $pool.allocationMaxNetmaskLength }}
 
----
+    {{- /* Readiness checks for usages */}}
+    {{- $poolKey := printf "ipam-pool-%s" $poolName }}
+    {{- $poolReady := get $resourceReadiness $poolKey | default false }}
+    {{- $poolCidrKey := printf "ipam-pool-cidr-%s" $poolName }}
+    {{- $poolCidrReady := get $resourceReadiness $poolCidrKey | default false }}
 
+---
 apiVersion: ec2.aws.m.upbound.io/v1beta1
 kind: VPCIpamPool
 metadata:
@@ -69,7 +77,11 @@ spec:
   forProvider:
     addressFamily: {{ $addressFamily }}
     description: {{ $poolDescription }}
-    {{- if $usesCustomScope }}
+    {{- if $isChildPool }}
+    {{- /* Child pool: reference parent pool, inherits scope from parent */}}
+    sourceIpamPoolIdRef:
+      name: {{ printf "%s-%s" $organizationName $sourcePoolRef }}
+    {{- else if $usesCustomScope }}
     {{- /* Custom scope: reference via ipamScopeIdRef */}}
     ipamScopeIdRef:
       name: {{ printf "%s-scope-%s" $organizationName $poolScopeRef }}
@@ -92,12 +104,12 @@ spec:
     allocationMaxNetmaskLength: {{ $allocationMax }}
     {{- end }}
     {{- if and (eq $addressFamily "ipv6") $amazonProvided }}
-    {{- if $publicIpSource }}
+      {{- if $publicIpSource }}
     publicIpSource: {{ $publicIpSource }}
-    {{- end }}
-    {{- if $awsService }}
+      {{- end }}
+      {{- if $awsService }}
     awsService: {{ $awsService }}
-    {{- end }}
+      {{- end }}
     {{- end }}
     tags:
       {{- toYaml $poolTags | nindent 6 }}
@@ -108,16 +120,77 @@ spec:
     kind: ProviderConfig
     name: {{ $providerConfigName }}
 
-    {{- /* Create VPCIpamPoolCidr if we have explicit CIDR, netmaskLength, or amazonProvidedIpv6CidrBlock */}}
-    {{- $poolCidrExternalName := $pool.cidrExternalName | default "" }}
-    {{- $needsCidrResource := or $poolCidr $poolNetmaskLength $amazonProvided }}
-    {{- if $needsCidrResource }}
----
+    {{- /* Usage: pool uses custom scope */}}
+    {{- if and $poolReady $usesCustomScope }}
+      {{- $scopeResourceName := printf "%s-scope-%s" $organizationName $poolScopeRef }}
+      {{- $scopeKey := printf "custom-scope-%s" $poolScopeRef }}
+      {{- $scopeReady := get $resourceReadiness $scopeKey | default false }}
+      {{- if $scopeReady }}
 
+---
+apiVersion: protection.crossplane.io/v1beta1
+kind: Usage
+metadata:
+  name: {{ printf "of-scope-%s-by-pool-%s" $scopeResourceName $poolResourceName }}
+  annotations:
+    {{ setResourceNameAnnotation (printf "ipam-pool-scope-usage-%s" $poolName) }}
+spec:
+  replayDeletion: true
+  by:
+    apiVersion: ec2.aws.m.upbound.io/v1beta1
+    kind: VPCIpamPool
+    resourceRef:
+      name: {{ $poolResourceName }}
+  of:
+    apiVersion: ec2.aws.m.upbound.io/v1beta1
+    kind: VPCIpamScope
+    resourceRef:
+      name: {{ $scopeResourceName }}
+
+      {{- end }}
+    {{- end }}
+
+    {{- /* Usage: child pool uses parent pool */}}
+    {{- if and $poolReady $isChildPool }}
+      {{- $parentPoolResourceName := printf "%s-%s" $organizationName $sourcePoolRef }}
+      {{- $parentPoolKey := printf "ipam-pool-%s" $sourcePoolRef }}
+      {{- $parentPoolReady := get $resourceReadiness $parentPoolKey | default false }}
+      {{- if $parentPoolReady }}
+
+---
+apiVersion: protection.crossplane.io/v1beta1
+kind: Usage
+metadata:
+  name: {{ printf "of-ipam-pool-%s-by-child-pool-%s" $parentPoolResourceName $poolResourceName }}
+  annotations:
+    {{ setResourceNameAnnotation (printf "ipam-child-pool-usage-%s" $poolName) }}
+spec:
+  replayDeletion: true
+  by:
+    apiVersion: ec2.aws.m.upbound.io/v1beta1
+    kind: VPCIpamPool
+    resourceRef:
+      name: {{ $poolResourceName }}
+  of:
+    apiVersion: ec2.aws.m.upbound.io/v1beta1
+    kind: VPCIpamPool
+    resourceRef:
+      name: {{ $parentPoolResourceName }}
+
+      {{- end }}
+    {{- end }}
+
+    {{- /* Create VPCIpamPoolCidr if we have explicit CIDR, netmaskLength, or amazonProvidedIpv6CidrBlock */}}
+    {{- /* Child pools don't need a CIDR resource - they allocate from parent */}}
+    {{- $poolCidrExternalName := $pool.cidrExternalName | default "" }}
+    {{- $needsCidrResource := and (or $poolCidr $poolNetmaskLength $amazonProvided) (not $isChildPool) }}
+    {{- if $needsCidrResource }}
+
+---
 apiVersion: ec2.aws.m.upbound.io/v1beta1
 kind: VPCIpamPoolCidr
 metadata:
-  name: {{ printf "%s-cidr" $poolResourceName }}
+  name: {{ $poolCidrResourceName }}
   annotations:
     {{ setResourceNameAnnotation (printf "ipam-pool-cidr-%s" $poolName) }}
     {{- if $poolCidrExternalName }}
@@ -140,7 +213,32 @@ spec:
   providerConfigRef:
     kind: ProviderConfig
     name: {{ $providerConfigName }}
+
+      {{- /* Usage: CIDR uses pool */}}
+      {{- if and $poolReady $poolCidrReady }}
+
+---
+apiVersion: protection.crossplane.io/v1beta1
+kind: Usage
+metadata:
+  name: {{ printf "of-ipam-pool-%s-by-pool-cidr-%s" $poolResourceName $poolCidrResourceName }}
+  annotations:
+    {{ setResourceNameAnnotation (printf "ipam-pool-cidr-usage-%s" $poolName) }}
+spec:
+  replayDeletion: true
+  by:
+    apiVersion: ec2.aws.m.upbound.io/v1beta1
+    kind: VPCIpamPoolCidr
+    resourceRef:
+      name: {{ $poolCidrResourceName }}
+  of:
+    apiVersion: ec2.aws.m.upbound.io/v1beta1
+    kind: VPCIpamPool
+    resourceRef:
+      name: {{ $poolResourceName }}
+
+      {{- end }}
     {{- end }}
 
   {{- end }}
-{{ end }}
+{{- end }}

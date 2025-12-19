@@ -7,7 +7,7 @@ status:
   managementMode: {{ $managementMode | quote }}
   scope: {{ $scope | quote }}
   ipam:
-    name: {{ printf "%s-ipam" $organizationName | quote }}
+    name: {{ $organizationName | quote }}
     region: {{ $homeRegion | quote }}
     id: {{ $observedIpamId | default "" | quote }}
     arn: {{ $observedIpamArn | default "" | quote }}

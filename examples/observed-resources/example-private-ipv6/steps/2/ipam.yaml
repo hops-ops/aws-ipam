@@ -2,7 +2,7 @@
 apiVersion: ec2.aws.m.upbound.io/v1beta1
 kind: VPCIpam
 metadata:
-  name: my-org-ipam
+  name: my-org
   annotations:
     crossplane.io/composition-resource-name: ipam
     gotemplating.fn.crossplane.io/composition-resource-name: ipam

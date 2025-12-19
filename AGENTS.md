@@ -25,6 +25,37 @@ Whenever you add schema knobs, update the examples, README, and tests in the sam
 
 ## Rendering Guidelines
 
+### Resource Naming
+
+**Do not add redundant type suffixes to resource names.** The `kind` already tells you what the resource is.
+
+Bad:
+```yaml
+{{ $ipamResourceName := printf "%s-ipam" $organizationName }}
+---
+apiVersion: ec2.aws.m.upbound.io/v1beta1
+kind: VPCIpam
+metadata:
+  name: {{ $ipamResourceName }}  # "platform-ipam" - redundant suffix
+```
+
+Good:
+```yaml
+---
+apiVersion: ec2.aws.m.upbound.io/v1beta1
+kind: VPCIpam
+metadata:
+  name: {{ $organizationName }}  # "platform" - clean, the Kind tells you it's an IPAM
+```
+
+Exceptions where suffixes make sense:
+- Disambiguating multiple resources of the same kind: `{{ $poolName }}-cidr` when you have both a Pool and its Cidr
+- Child resources that need to reference a parent: the suffix helps link them visually
+
+This keeps names short, reduces template complexity, and avoids the extra work of formatting `printf "%s-<kind>" $name` everywhere.
+
+### Template Structure
+
 - Declare inputs (organization name, provider configs, deletion/management policies, tag maps, pool lists) in `functions/render/00-desired-values.yaml.gotmpl`. Default aggressively with `default` and `merge` helpers so templates never dereference nil values.
 - Keep resources split per file:
   - `05-ipam`: `VpcIpam` + `VpcIpamScope`

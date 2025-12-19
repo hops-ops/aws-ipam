@@ -15,7 +15,7 @@ _items = [
                     apiVersion: "ec2.aws.m.upbound.io/v1beta1"
                     kind: "VPCIpam"
                     metadata: {
-                        name: "platform-ipam"
+                        name: "platform"
                         annotations: {
                             "gotemplating.fn.crossplane.io/composition-resource-name": "ipam"
                             "crossplane.io/composition-resource-name": "ipam"
@@ -42,7 +42,7 @@ _items = [
                     apiVersion: "ec2.aws.m.upbound.io/v1beta1"
                     kind: "VPCIpam"
                     metadata: {
-                        name: "platform-ipam"
+                        name: "platform"
                         labels: {
                             'hops.ops.com.ai/organization': "platform"
                         }
@@ -563,6 +563,181 @@ _items = [
                     spec: {
                         forProvider: {
                             cidr: "10.8.0.0/14"
+                        }
+                    }
+                }
+            ]
+        }
+    },
+    metav1alpha1.CompositionTest{
+        metadata.name: "test-ipam-child-pool-usage"
+        spec = {
+            compositionPath: "apis/ipams/composition.yaml"
+            xrPath: "examples/ipams/example-with-subnet-pool.yaml"
+            xrdPath: "apis/ipams/definition.yaml"
+            timeoutSeconds: 120
+            validate: True
+            observedResources: [
+                {
+                    apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                    kind: "VPCIpam"
+                    metadata: {
+                        name: "platform"
+                        annotations: {
+                            "gotemplating.fn.crossplane.io/composition-resource-name": "ipam"
+                            "crossplane.io/composition-resource-name": "ipam"
+                        }
+                    }
+                    status: {
+                        conditions: [
+                            {
+                                type: "Ready"
+                                status: "True"
+                            }
+                        ]
+                        atProvider: {
+                            id: "ipam-childtest"
+                            arn: "arn:aws:ec2:us-east-1:123456789012:ipam/ipam-childtest"
+                            privateDefaultScopeId: "ipam-scope-private-childtest"
+                            publicDefaultScopeId: "ipam-scope-public-childtest"
+                        }
+                    }
+                },
+                {
+                    apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                    kind: "VPCIpamPool"
+                    metadata: {
+                        name: "platform-vpc-pool"
+                        annotations: {
+                            "gotemplating.fn.crossplane.io/composition-resource-name": "ipam-pool-vpc-pool"
+                            "crossplane.io/composition-resource-name": "ipam-pool-vpc-pool"
+                        }
+                    }
+                    status: {
+                        conditions: [
+                            {
+                                type: "Ready"
+                                status: "True"
+                            }
+                        ]
+                        atProvider: {
+                            id: "ipam-pool-vpc"
+                            arn: "arn:aws:ec2:us-east-1:123456789012:ipam-pool/ipam-pool-vpc"
+                        }
+                    }
+                },
+                {
+                    apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                    kind: "VPCIpamPoolCidr"
+                    metadata: {
+                        name: "platform-vpc-pool-cidr"
+                        annotations: {
+                            "gotemplating.fn.crossplane.io/composition-resource-name": "ipam-pool-cidr-vpc-pool"
+                            "crossplane.io/composition-resource-name": "ipam-pool-cidr-vpc-pool"
+                        }
+                    }
+                    status: {
+                        conditions: [
+                            {
+                                type: "Ready"
+                                status: "True"
+                            }
+                        ]
+                        atProvider: {
+                            id: "ipam-pool-cidr-vpc"
+                        }
+                    }
+                },
+                {
+                    apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                    kind: "VPCIpamPool"
+                    metadata: {
+                        name: "platform-subnet-pool"
+                        annotations: {
+                            "gotemplating.fn.crossplane.io/composition-resource-name": "ipam-pool-subnet-pool"
+                            "crossplane.io/composition-resource-name": "ipam-pool-subnet-pool"
+                        }
+                    }
+                    status: {
+                        conditions: [
+                            {
+                                type: "Ready"
+                                status: "True"
+                            }
+                        ]
+                        atProvider: {
+                            id: "ipam-pool-subnet"
+                            arn: "arn:aws:ec2:us-east-1:123456789012:ipam-pool/ipam-pool-subnet"
+                        }
+                    }
+                }
+            ]
+            assertResources: [
+                # Child pool should have sourceIpamPoolIdRef to parent
+                {
+                    apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                    kind: "VPCIpamPool"
+                    metadata: {
+                        name: "platform-subnet-pool"
+                    }
+                    spec: {
+                        forProvider: {
+                            sourceIpamPoolIdRef: {
+                                name: "platform-vpc-pool"
+                            }
+                            allocationDefaultNetmaskLength: 24
+                            allocationMinNetmaskLength: 20
+                            allocationMaxNetmaskLength: 28
+                        }
+                    }
+                },
+                # Pool-to-CIDR usage for parent pool
+                {
+                    apiVersion: "protection.crossplane.io/v1beta1"
+                    kind: "Usage"
+                    metadata: {
+                        name: "of-ipam-pool-platform-vpc-pool-by-pool-cidr-platform-vpc-pool-cidr"
+                    }
+                    spec: {
+                        replayDeletion: True
+                        by: {
+                            apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                            kind: "VPCIpamPoolCidr"
+                            resourceRef: {
+                                name: "platform-vpc-pool-cidr"
+                            }
+                        }
+                        of: {
+                            apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                            kind: "VPCIpamPool"
+                            resourceRef: {
+                                name: "platform-vpc-pool"
+                            }
+                        }
+                    }
+                },
+                # Child-to-parent pool usage - ensures child is deleted before parent
+                {
+                    apiVersion: "protection.crossplane.io/v1beta1"
+                    kind: "Usage"
+                    metadata: {
+                        name: "of-ipam-pool-platform-vpc-pool-by-child-pool-platform-subnet-pool"
+                    }
+                    spec: {
+                        replayDeletion: True
+                        by: {
+                            apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                            kind: "VPCIpamPool"
+                            resourceRef: {
+                                name: "platform-subnet-pool"
+                            }
+                        }
+                        of: {
+                            apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                            kind: "VPCIpamPool"
+                            resourceRef: {
+                                name: "platform-vpc-pool"
+                            }
                         }
                     }
                 }
