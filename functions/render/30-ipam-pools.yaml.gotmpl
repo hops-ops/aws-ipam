@@ -24,13 +24,31 @@
        - scopeRef set: use custom scope via ipamScopeIdRef (no gating)
        - scope: public: use IPAM's publicDefaultScopeId (needs IPAM observed)
        - default (private): use IPAM's privateDefaultScopeId (needs IPAM observed)
+       - child pool (sourcePoolRef): inherits scope from parent, needs parent pool ID
   */}}
   {{- $isPublicPool := eq $poolScope "public" }}
   {{- $usesCustomScope := and $poolScopeRef (hasKey $customScopeNames $poolScopeRef) }}
 
+  {{- /* Get parent pool data for child pools */}}
+  {{- $parentPoolData := dict }}
+  {{- $parentPoolId := "" }}
+  {{- $parentPoolReady := false }}
+  {{- if $isChildPool }}
+    {{- $parentPoolData = get $observedPools $sourcePoolRef | default (dict) }}
+    {{- $parentPoolId = $parentPoolData.id | default "" }}
+    {{- $parentPoolKey := printf "ipam-pool-%s" $sourcePoolRef }}
+    {{- $parentPoolReady = get $resourceReadiness $parentPoolKey | default false }}
+  {{- end }}
+
   {{- /* Pools using default scopes need the IPAM to be Ready first */}}
+  {{- /* Child pools need the parent pool to be Ready with a valid ID */}}
   {{- $canRenderPool := true }}
-  {{- if not $usesCustomScope }}
+  {{- if $isChildPool }}
+    {{- /* Child pools: require parent pool Ready AND have valid pool ID */}}
+    {{- if or (not $parentPoolReady) (not $parentPoolId) }}
+      {{- $canRenderPool = false }}
+    {{- end }}
+  {{- else if not $usesCustomScope }}
     {{- if $isPublicPool }}
       {{- if not $observedPublicDefaultScopeId }}
         {{- $canRenderPool = false }}
@@ -78,9 +96,8 @@ spec:
     addressFamily: {{ $addressFamily }}
     description: {{ $poolDescription }}
     {{- if $isChildPool }}
-    {{- /* Child pool: reference parent pool, inherits scope from parent */}}
-    sourceIpamPoolIdRef:
-      name: {{ printf "%s-%s" $organizationName $sourcePoolRef }}
+    {{- /* Child pool: use parent pool ID directly (avoids provider scope resolution bug) */}}
+    sourceIpamPoolId: {{ $parentPoolId }}
     {{- else if $usesCustomScope }}
     {{- /* Custom scope: reference via ipamScopeIdRef */}}
     ipamScopeIdRef:

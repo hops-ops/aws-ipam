@@ -40,7 +40,8 @@ jobs:
           { "example": "examples/ipams/example-private-ipv6.yaml", "observed_resources": "examples/observed-resources/example-private-ipv6/steps/2" },
           { "example": "examples/ipams/example-private-ipv6.yaml", "observed_resources": "examples/observed-resources/example-private-ipv6/steps/3" },
           { "example": "examples/ipams/example-with-subnet-pool.yaml" },
-          { "example": "examples/ipams/example-with-subnet-pool.yaml", "observed_resources": "examples/observed-resources/example-with-subnet-pool/steps/1" }
+          { "example": "examples/ipams/example-with-subnet-pool.yaml", "observed_resources": "examples/observed-resources/example-with-subnet-pool/steps/1" },
+          { "example": "examples/ipams/example-with-subnet-pool.yaml", "observed_resources": "examples/observed-resources/example-with-subnet-pool/steps/2" }
         ]
       api_path: apis/ipams
       error_on_missing_schemas: true

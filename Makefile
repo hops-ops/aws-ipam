@@ -18,7 +18,8 @@ EXAMPLES := \
 	examples/ipams/example-private-ipv6.yaml::examples/observed-resources/example-private-ipv6/steps/2 \
 	examples/ipams/example-private-ipv6.yaml::examples/observed-resources/example-private-ipv6/steps/3 \
 	examples/ipams/example-with-subnet-pool.yaml:: \
-	examples/ipams/example-with-subnet-pool.yaml::examples/observed-resources/example-with-subnet-pool/steps/1
+	examples/ipams/example-with-subnet-pool.yaml::examples/observed-resources/example-with-subnet-pool/steps/1 \
+	examples/ipams/example-with-subnet-pool.yaml::examples/observed-resources/example-with-subnet-pool/steps/2
 
 clean:
 	rm -rf _output

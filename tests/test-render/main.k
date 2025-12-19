@@ -673,7 +673,7 @@ _items = [
                 }
             ]
             assertResources: [
-                # Child pool should have sourceIpamPoolIdRef to parent
+                # Child pool should have sourceIpamPoolId (direct ID from observed parent)
                 {
                     apiVersion: "ec2.aws.m.upbound.io/v1beta1"
                     kind: "VPCIpamPool"
@@ -682,9 +682,7 @@ _items = [
                     }
                     spec: {
                         forProvider: {
-                            sourceIpamPoolIdRef: {
-                                name: "platform-vpc-pool"
-                            }
+                            sourceIpamPoolId: "ipam-pool-vpc"
                             allocationDefaultNetmaskLength: 24
                             allocationMinNetmaskLength: 20
                             allocationMaxNetmaskLength: 28
