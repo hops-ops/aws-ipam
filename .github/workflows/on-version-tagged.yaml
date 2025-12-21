@@ -1,5 +1,4 @@
 name: on-version-tagged
-
 on:
   push:
     tags:
@@ -14,7 +13,7 @@ permissions:
 jobs:
 
   publish:
-    uses: unbounded-tech/workflows-crossplane/.github/workflows/publish.yaml@v1.1.0
+    uses: unbounded-tech/workflows-crossplane/.github/workflows/publish.yaml@v2.0.0
     secrets: inherit
     with:
       tag: ${{ github.ref_name }}

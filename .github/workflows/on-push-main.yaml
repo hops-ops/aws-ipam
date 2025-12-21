@@ -14,12 +14,6 @@ on:
       - 'tests/**'
       - 'upbound.yaml'
 
-env:
-  ipam_external_name: "ipam-0573c7815d0a36e00"
-  ipv4_pool_external_name: ""
-  ipv6_public_pool_external_name: ""
-  ipv6_private_pool_external_name: ""
-
 permissions:
   packages: write
   contents: write
@@ -29,7 +23,7 @@ permissions:
 jobs:
 
   validate:
-    uses: unbounded-tech/workflows-crossplane/.github/workflows/validate.yaml@v1.1.0
+    uses: unbounded-tech/workflows-crossplane/.github/workflows/validate.yaml@v2.0.0
     with:
       examples: |
         [
@@ -47,16 +41,16 @@ jobs:
       error_on_missing_schemas: true
 
   test:
-    uses: unbounded-tech/workflows-crossplane/.github/workflows/test.yaml@v1.1.0
+    uses: unbounded-tech/workflows-crossplane/.github/workflows/test.yaml@v2.0.0
 
   e2e:
-    uses: unbounded-tech/workflows-crossplane/.github/workflows/e2e.yaml@feat/e2e2
-    with:
-      aws: true
-      timeout-minutes: 30
+    uses: unbounded-tech/workflows-crossplane/.github/workflows/e2e.yaml@v2.0.0
     secrets:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    with:
+      aws: true
+      timeout-minutes: 30
 
   version-and-tag:
     name: Version and Tag
