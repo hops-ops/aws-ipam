@@ -76,6 +76,39 @@
   {{- end }}
 {{ end }}
 
+{{- /* Extract auto-generated subnet pool observations */}}
+{{ range $pool := $ipamPools }}
+  {{- $poolName := $pool.name }}
+  {{- $subnetPoolConfig := $pool.subnetPool | default (dict) }}
+  {{- $subnetPoolEnabled := $subnetPoolConfig.enabled | default false }}
+  {{- if and $poolName $subnetPoolEnabled }}
+    {{- $subnetPoolName := printf "%s-subnets" $poolName }}
+    {{- $subnetPoolKey := printf "ipam-pool-%s" $subnetPoolName }}
+    {{- $subnetPoolObservation := get $observed $subnetPoolKey }}
+    {{- $subnetPoolId := "" }}
+    {{- $subnetPoolArn := "" }}
+    {{- $subnetPoolScopeId := "" }}
+    {{- with $subnetPoolObservation }}
+      {{- $resource := .resource | default (dict) }}
+      {{- $status := $resource.status | default (dict) }}
+      {{- $atProvider := $status.atProvider | default (dict) }}
+      {{- $candidateId := $atProvider.id | default "" }}
+      {{- $candidateArn := $atProvider.arn | default "" }}
+      {{- $candidateScopeId := $atProvider.ipamScopeId | default "" }}
+      {{- if $candidateId }}
+        {{- $subnetPoolId = $candidateId }}
+      {{- end }}
+      {{- if $candidateArn }}
+        {{- $subnetPoolArn = $candidateArn }}
+      {{- end }}
+      {{- if $candidateScopeId }}
+        {{- $subnetPoolScopeId = $candidateScopeId }}
+      {{- end }}
+    {{- end }}
+    {{- $_ := set $observedPools $subnetPoolName (dict "id" $subnetPoolId "arn" $subnetPoolArn "ipamScopeId" $subnetPoolScopeId) }}
+  {{- end }}
+{{ end }}
+
 {{ $ramShares := dict }}
 {{ range $pool := $ipamPools }}
   {{- $poolName := $pool.name }}

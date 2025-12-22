@@ -1,5 +1,8 @@
-# IPAM with child subnet pool for strict CIDR control
-# Creates a VPC pool and a child subnet pool for subnet allocations
+# IPAM with manual child subnet pool (sourcePoolRef pattern)
+# Creates a VPC pool and a child subnet pool using explicit sourcePoolRef
+#
+# This is the manual approach - for the simpler automatic approach,
+# see example-with-auto-subnet-pool.yaml
 apiVersion: aws.hops.ops.com.ai/v1alpha1
 kind: IPAM
 metadata:
@@ -17,7 +20,7 @@ spec:
       allocationMaxNetmaskLength: 20
       labels:
         hops.ops.com.ai/global-pool: sandbox
-    # Child pool for subnet allocations (allocates from vpc-pool)
+    # Child pool for subnet allocations (explicit sourcePoolRef)
     - name: subnet-pool
       sourcePoolRef: vpc-pool
       allocationDefaultNetmaskLength: 24

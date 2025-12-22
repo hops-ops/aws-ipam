@@ -12,8 +12,8 @@
 # Note: ULA (fd00::/8) CIDRs are NOT supported by AWS IPAM - only Amazon-provided GUA or BYOIP
 #
 # Pools created (ephemeral - deleted after test):
-# - aws-ipam-<timestamp>: test pool to verify create/delete cycle
-# - aws-ipam-<timestamp>-child: child pool testing sourcePoolRef feature
+# - aws-ipam-<timestamp>: test pool with automatic subnet pool
+# - aws-ipam-<timestamp>-subnets: auto-created child pool via subnetPool.enabled
 
 import base64
 import datetime
@@ -162,6 +162,7 @@ _items = [
                                 }
                             },
                             # Ephemeral test pool - deleted after test run
+                            # Uses subnetPool.enabled to auto-create child subnet pool
                             {
                                 name: _test_pool_name
                                 addressFamily: "ipv4"
@@ -176,33 +177,23 @@ _items = [
                                 labels: {
                                     "ephemeral": "true"
                                     "test-run": _now
+                                    "hops.ops.com.ai/global-pool": _test_pool_name
                                 }
                                 tags: {
                                     purpose: "e2e-test"
                                     "test-run": _now
                                 }
-                            },
-                            # Ephemeral child pool - tests sourcePoolRef feature
-                            # Creates a child pool that allocates from the parent's CIDR space
-                            {
-                                name: _test_pool_name + "-child"
-                                addressFamily: "ipv4"
-                                region: _home_region
-                                sourcePoolRef: _test_pool_name
-                                # Full management - gets deleted with parent
-                                managementPolicies: ["*"]
-                                allocationDefaultNetmaskLength: 28
-                                allocationMinNetmaskLength: 26
-                                allocationMaxNetmaskLength: 28
-                                description: "Ephemeral child pool - " + _test_pool_name + "-child"
-                                labels: {
-                                    "ephemeral": "true"
-                                    "test-run": _now
-                                    "parent-pool": _test_pool_name
-                                }
-                                tags: {
-                                    purpose: "e2e-test-child"
-                                    "test-run": _now
+                                # Auto-create subnet pool named ${name}-subnets
+                                subnetPool: {
+                                    enabled: True
+                                    allocationDefaultNetmaskLength: 28
+                                    allocationMinNetmaskLength: 26
+                                    allocationMaxNetmaskLength: 28
+                                    description: "Auto-created subnet pool for " + _test_pool_name
+                                    tags: {
+                                        purpose: "e2e-test-subnet-pool"
+                                        "test-run": _now
+                                    }
                                 }
                             }
                         ]
