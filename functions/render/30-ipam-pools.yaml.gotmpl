@@ -196,6 +196,33 @@ spec:
     resourceRef:
       name: {{ $parentPoolResourceName }}
 
+        {{- /* Usage: child pool uses parent pool's CIDR */}}
+        {{- $parentPoolCidrResourceName := printf "%s-%s-cidr" $organizationName $sourcePoolRef }}
+        {{- $parentPoolCidrKey := printf "ipam-pool-cidr-%s" $sourcePoolRef }}
+        {{- $parentPoolCidrReady := get $resourceReadiness $parentPoolCidrKey | default false }}
+        {{- if $parentPoolCidrReady }}
+
+---
+apiVersion: protection.crossplane.io/v1beta1
+kind: Usage
+metadata:
+  name: {{ printf "of-ipam-pool-cidr-%s-by-child-pool-%s" $parentPoolCidrResourceName $poolResourceName }}
+  annotations:
+    {{ setResourceNameAnnotation (printf "ipam-child-pool-cidr-usage-%s" $poolName) }}
+spec:
+  replayDeletion: true
+  by:
+    apiVersion: ec2.aws.m.upbound.io/v1beta1
+    kind: VPCIpamPool
+    resourceRef:
+      name: {{ $poolResourceName }}
+  of:
+    apiVersion: ec2.aws.m.upbound.io/v1beta1
+    kind: VPCIpamPoolCidr
+    resourceRef:
+      name: {{ $parentPoolCidrResourceName }}
+
+        {{- end }}
       {{- end }}
     {{- end }}
 
@@ -355,6 +382,33 @@ spec:
     resourceRef:
       name: {{ $parentPoolResourceName }}
 
+        {{- /* Usage: subnet pool uses parent pool's CIDR */}}
+        {{- $parentPoolCidrResourceName := printf "%s-%s-cidr" $organizationName $poolName }}
+        {{- $parentPoolCidrKey := printf "ipam-pool-cidr-%s" $poolName }}
+        {{- $parentPoolCidrReady := get $resourceReadiness $parentPoolCidrKey | default false }}
+        {{- if $parentPoolCidrReady }}
+
+---
+apiVersion: protection.crossplane.io/v1beta1
+kind: Usage
+metadata:
+  name: {{ printf "of-ipam-pool-cidr-%s-by-subnet-pool-%s" $parentPoolCidrResourceName $subnetPoolResourceName }}
+  annotations:
+    {{ setResourceNameAnnotation (printf "ipam-subnet-pool-cidr-usage-%s" $subnetPoolName) }}
+spec:
+  replayDeletion: true
+  by:
+    apiVersion: ec2.aws.m.upbound.io/v1beta1
+    kind: VPCIpamPool
+    resourceRef:
+      name: {{ $subnetPoolResourceName }}
+  of:
+    apiVersion: ec2.aws.m.upbound.io/v1beta1
+    kind: VPCIpamPoolCidr
+    resourceRef:
+      name: {{ $parentPoolCidrResourceName }}
+
+        {{- end }}
       {{- end }}
     {{- end }}
   {{- end }}
