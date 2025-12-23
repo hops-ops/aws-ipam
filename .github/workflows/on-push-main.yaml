@@ -27,15 +27,24 @@ jobs:
     with:
       examples: |
         [
-          { "example": "examples/ipams/example-minimal.yaml" },
-          { "example": "examples/ipams/example-multi-region.yaml" },
-          { "example": "examples/ipams/example-private-ipv6.yaml" },
-          { "example": "examples/ipams/example-private-ipv6.yaml", "observed_resources": "examples/observed-resources/example-private-ipv6/steps/1" },
-          { "example": "examples/ipams/example-private-ipv6.yaml", "observed_resources": "examples/observed-resources/example-private-ipv6/steps/2" },
-          { "example": "examples/ipams/example-private-ipv6.yaml", "observed_resources": "examples/observed-resources/example-private-ipv6/steps/3" },
-          { "example": "examples/ipams/example-with-subnet-pool.yaml" },
-          { "example": "examples/ipams/example-with-subnet-pool.yaml", "observed_resources": "examples/observed-resources/example-with-subnet-pool/steps/1" },
-          { "example": "examples/ipams/example-with-subnet-pool.yaml", "observed_resources": "examples/observed-resources/example-with-subnet-pool/steps/2" }
+          { "example": "examples/ipams/minimal.yaml" },
+          { "example": "examples/ipams/multi-region.yaml" },
+          { "example": "examples/ipams/private-ipv6.yaml" },
+          { "example": "examples/ipams/private-ipv6.yaml", "observed_resources": "examples/test/mocks/observed-resources/private-ipv6/steps/1" },
+          { "example": "examples/ipams/private-ipv6.yaml", "observed_resources": "examples/test/mocks/observed-resources/private-ipv6/steps/2" },
+          { "example": "examples/ipams/private-ipv6.yaml", "observed_resources": "examples/test/mocks/observed-resources/private-ipv6/steps/3" },
+          { "example": "examples/ipams/with-subnet-pool.yaml" },
+          { "example": "examples/ipams/with-subnet-pool.yaml", "observed_resources": "examples/test/mocks/observed-resources/with-subnet-pool/steps/1" },
+          { "example": "examples/ipams/with-subnet-pool.yaml", "observed_resources": "examples/test/mocks/observed-resources/with-subnet-pool/steps/2" },
+          { "example": "examples/ipams/with-subnet-pool.yaml", "observed_resources": "examples/test/mocks/observed-resources/with-subnet-pool/steps/3" },
+          { "example": "examples/ipams/with-auto-subnet-pool.yaml" },
+          { "example": "examples/ipams/with-auto-subnet-pool.yaml", "observed_resources": "examples/test/mocks/observed-resources/with-auto-subnet-pool/steps/1" },
+          { "example": "examples/ipams/with-auto-subnet-pool.yaml", "observed_resources": "examples/test/mocks/observed-resources/with-auto-subnet-pool/steps/2" },
+          { "example": "examples/ipams/with-auto-subnet-pool.yaml", "observed_resources": "examples/test/mocks/observed-resources/with-auto-subnet-pool/steps/3" },
+          { "example": "examples/ipams/with-subnet-pools.yaml" },
+          { "example": "examples/ipams/with-subnet-pools.yaml", "observed_resources": "examples/test/mocks/observed-resources/with-subnet-pools/steps/1" },
+          { "example": "examples/ipams/with-subnet-pools.yaml", "observed_resources": "examples/test/mocks/observed-resources/with-subnet-pools/steps/2" },
+          { "example": "examples/ipams/with-subnet-pools.yaml", "observed_resources": "examples/test/mocks/observed-resources/with-subnet-pools/steps/3" }
         ]
       api_path: apis/ipams
       error_on_missing_schemas: true
@@ -52,7 +61,7 @@ jobs:
       aws: true
       cleanup-timeout-minutes: 20
       timeout-minutes: 30
-      debug-example-path: examples/ipams/example-minimal.yaml
+      debug-example-path: examples/ipams/minimal.yaml
       debug-resource-types: |
         [
           "ipams.aws.hops.ops.com.ai"

@@ -6,7 +6,7 @@ _items = [
         metadata.name: "test-ipam-minimal"
         spec = {
             compositionPath: "apis/ipams/composition.yaml"
-            xrPath: "examples/ipams/example-minimal.yaml"
+            xrPath: "examples/ipams/minimal.yaml"
             xrdPath: "apis/ipams/definition.yaml"
             timeoutSeconds: 120
             validate: True
@@ -107,7 +107,7 @@ _items = [
         metadata.name: "test-ipam-usages"
         spec = {
             compositionPath: "apis/ipams/composition.yaml"
-            xrPath: "examples/ipams/example-multi-region.yaml"
+            xrPath: "examples/ipams/multi-region.yaml"
             xrdPath: "apis/ipams/definition.yaml"
             timeoutSeconds: 120
             validate: True
@@ -465,7 +465,7 @@ _items = [
         metadata.name: "test-ipam-multi-region"
         spec = {
             compositionPath: "apis/ipams/composition.yaml"
-            xrPath: "examples/ipams/example-multi-region.yaml"
+            xrPath: "examples/ipams/multi-region.yaml"
             xrdPath: "apis/ipams/definition.yaml"
             timeoutSeconds: 120
             validate: True
@@ -573,7 +573,7 @@ _items = [
         metadata.name: "test-ipam-child-pool-usage"
         spec = {
             compositionPath: "apis/ipams/composition.yaml"
-            xrPath: "examples/ipams/example-with-subnet-pool.yaml"
+            xrPath: "examples/ipams/with-subnet-pool.yaml"
             xrdPath: "apis/ipams/definition.yaml"
             timeoutSeconds: 120
             validate: True
@@ -749,7 +749,7 @@ _items = [
         metadata.name: "test-ipam-subnet-pool-address-family-inheritance"
         spec = {
             compositionPath: "apis/ipams/composition.yaml"
-            xrPath: "examples/ipams/example-with-subnet-pools.yaml"
+            xrPath: "examples/ipams/with-subnet-pools.yaml"
             xrdPath: "apis/ipams/definition.yaml"
             timeoutSeconds: 120
             validate: True
@@ -962,7 +962,7 @@ _items = [
         metadata.name: "test-ipam-management-policies-cascade"
         spec = {
             compositionPath: "apis/ipams/composition.yaml"
-            xrPath: "examples/ipams/example-management-policies.yaml"
+            xrPath: "examples/ipams/management-policies.yaml"
             xrdPath: "apis/ipams/definition.yaml"
             timeoutSeconds: 120
             validate: True

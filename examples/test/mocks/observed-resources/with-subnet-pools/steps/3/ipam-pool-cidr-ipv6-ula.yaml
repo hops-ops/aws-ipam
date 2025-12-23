@@ -1,4 +1,4 @@
-# Step 2: IPv6 ULA pool CIDR is Ready
+# Step 3: IPv6 ULA pool CIDR is Ready
 apiVersion: ec2.aws.m.upbound.io/v1beta1
 kind: VPCIpamPoolCidr
 metadata:
@@ -12,3 +12,5 @@ status:
       status: "True"
   atProvider:
     id: ipam-pool-cidr-ipv6-ula
+    cidr: "fd00:db8:1234::/56"
+    state: provisioned

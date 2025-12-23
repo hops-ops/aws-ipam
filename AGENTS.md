@@ -5,7 +5,14 @@ This repository publishes the namespaced `IPAM` configuration package. Follow th
 ## Repository Layout
 
 - `apis/`: XRD (`ipams/definition.yaml`), composition, and package metadata. Treat this directory as the source of truth for what ships.
-- `examples/`: Renderable IPAM specs. Keep them minimal and up to date with the schema.
+- `examples/ipams/`: Renderable IPAM specs. Keep them minimal and up to date with the schema. Use simple names without `example-` prefix (e.g., `minimal.yaml`, `multi-region.yaml`).
+- `examples/test/mocks/observed-resources/`: Mock observed resources for multi-step render testing. Organized by example name with numbered steps:
+  ```
+  examples/test/mocks/observed-resources/
+  ├── private-ipv6/steps/{1,2,3}/
+  ├── with-subnet-pool/steps/{1,2,3}/
+  └── with-subnet-pools/steps/{1,2,3}/
+  ```
 - `functions/render/`: Go-template pipeline executed by `up composition render`. Prefix files (`00-`, `05-`, `10-`, `90-`, etc.) so related logic stays grouped.
 - `tests/`: Regression coverage powered by `up test` (KCL assertions).
 - `.github/` & `.gitops/`: CI + GitOps automation. Keep them structurally identical—only tweak repo-specific values like image names.
@@ -87,12 +94,30 @@ aws_access_key_id = AKIA...
 aws_secret_access_key = wJalrXUtnFEMI/K7MDENG/bPxRfiCY...
 ```
 
+## Adding or Modifying Examples
+
+When you add, rename, or remove an example, update these files in the same commit:
+
+1. **`Makefile`** – `EXAMPLES` list (format: `example_path::observed_resources_path`)
+2. **`.github/workflows/on-pr.yaml`** – `examples` array in the `validate` job
+3. **`.github/workflows/on-push-main.yaml`** – `examples` array in the `validate` job
+4. **`tests/test-render/main.k`** – `xrPath` references if the example is used in tests
+
+For examples with multi-step observed resources, add each step as a separate entry:
+```makefile
+examples/ipams/with-subnet-pool.yaml:: \
+examples/ipams/with-subnet-pool.yaml::examples/test/mocks/observed-resources/with-subnet-pool/steps/1 \
+examples/ipams/with-subnet-pool.yaml::examples/test/mocks/observed-resources/with-subnet-pool/steps/2
+```
+
+Run `make validate:all` locally before pushing to verify all paths resolve correctly.
+
 ## Tooling & Automation
 
 - `make render` / `make render-all` render examples via `up composition render`.
 - `make validate` runs `crossplane beta validate` on the XRD and examples.
 - `make publish tag=<version>` builds and pushes the configuration + render function packages.
-- `.github/workflows` and `.gitops/` rely on the shared `unbounded-tech/workflows-crossplane` actions (currently v0.8.0). Keep the versions in sync.
+- `.github/workflows` and `.gitops/` rely on the shared `unbounded-tech/workflows-crossplane` actions (currently v2.5.0). Keep the versions in sync.
 - Renovate config (`renovate.json`) matches other configs—extend it here if you need custom behavior.
 
 ## Provider Guidance

@@ -1,4 +1,4 @@
-# Step 2: IPv4 VPC pool CIDR is Ready
+# Step 3: IPv4 VPC pool CIDR is Ready
 apiVersion: ec2.aws.m.upbound.io/v1beta1
 kind: VPCIpamPoolCidr
 metadata:
@@ -12,3 +12,5 @@ status:
       status: "True"
   atProvider:
     id: ipam-pool-cidr-ipv4
+    cidr: "10.0.0.0/8"
+    state: provisioned
