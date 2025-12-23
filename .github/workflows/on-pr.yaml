@@ -2,8 +2,6 @@ name: on-pr
 
 on:
   pull_request:
-    branches:
-      - main
     types:
       - labeled
       - opened
