@@ -1,0 +1,17 @@
+# Step 1: IPAM is Ready - pools can now be created with scope IDs
+apiVersion: ec2.aws.m.upbound.io/v1beta1
+kind: VPCIpam
+metadata:
+  name: dual-stack
+  annotations:
+    gotemplating.fn.crossplane.io/composition-resource-name: ipam
+    crossplane.io/composition-resource-name: ipam
+status:
+  conditions:
+    - type: Ready
+      status: "True"
+  atProvider:
+    id: ipam-dualstack
+    arn: arn:aws:ec2:us-east-1:123456789012:ipam/ipam-dualstack
+    privateDefaultScopeId: ipam-scope-private-dualstack
+    publicDefaultScopeId: ipam-scope-public-dualstack

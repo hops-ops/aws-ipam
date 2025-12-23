@@ -1,0 +1,32 @@
+# IPAM testing managementPolicies cascade behavior
+# Verifies: subnetPool.managementPolicies -> parent pool.managementPolicies -> global
+apiVersion: aws.hops.ops.com.ai/v1alpha1
+kind: IPAM
+metadata:
+  name: mgmt-policy-test
+  namespace: infra
+spec:
+  scope: private
+  homeRegion: us-east-1
+  pools:
+    # Pool A: Parent has explicit policy, subnet pool inherits
+    - name: pool-a
+      cidr: "10.0.0.0/16"
+      managementPolicies: ["Observe"]
+      subnetPool:
+        enabled: true
+        # No managementPolicies - should inherit ["Observe"] from parent
+
+    # Pool B: Parent has policy, subnet pool overrides
+    - name: pool-b
+      cidr: "10.1.0.0/16"
+      managementPolicies: ["Observe"]
+      subnetPool:
+        enabled: true
+        managementPolicies: ["*"]  # Override parent's policy
+
+    # Pool C: No explicit policies - both should get global default ["*"]
+    - name: pool-c
+      cidr: "10.2.0.0/16"
+      subnetPool:
+        enabled: true

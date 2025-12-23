@@ -44,6 +44,34 @@ status:
         {{- end }}
       {{- end }}
 {{- end }}
+{{- /* Include auto-generated subnet pools */}}
+{{- range $pool := $ipamPools }}
+  {{- $poolName := $pool.name }}
+  {{- $subnetPoolConfig := $pool.subnetPool | default (dict) }}
+  {{- $subnetPoolEnabled := $subnetPoolConfig.enabled | default false }}
+  {{- if and $poolName $subnetPoolEnabled }}
+    {{- $subnetPoolName := printf "%s-subnets" $poolName }}
+    {{- $poolRegion := $pool.region | default $pool.locale | default $homeRegion }}
+    {{- $poolLocale := $pool.locale | default $poolRegion }}
+    {{- $subnetPoolStatus := get $observedPools $subnetPoolName | default (dict) }}
+    {{- $subnetPoolId := $subnetPoolStatus.id | default "" }}
+    {{- $subnetPoolArn := $subnetPoolStatus.arn | default "" }}
+      - name: {{ $subnetPoolName | quote }}
+        region: {{ $poolRegion | quote }}
+        locale: {{ $poolLocale | quote }}
+        id: {{ $subnetPoolId | default "" | quote }}
+        arn: {{ $subnetPoolArn | default "" | quote }}
+        {{- if $subnetPoolConfig.allocationDefaultNetmaskLength }}
+        allocationDefaultNetmaskLength: {{ $subnetPoolConfig.allocationDefaultNetmaskLength }}
+        {{- end }}
+        {{- if $subnetPoolConfig.allocationMinNetmaskLength }}
+        allocationMinNetmaskLength: {{ $subnetPoolConfig.allocationMinNetmaskLength }}
+        {{- end }}
+        {{- if $subnetPoolConfig.allocationMaxNetmaskLength }}
+        allocationMaxNetmaskLength: {{ $subnetPoolConfig.allocationMaxNetmaskLength }}
+        {{- end }}
+  {{- end }}
+{{- end }}
 {{- $ramShareEntries := list }}
 {{- range $pool := $ipamPools }}
   {{- $poolName := $pool.name }}

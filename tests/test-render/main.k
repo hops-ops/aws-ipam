@@ -6,7 +6,7 @@ _items = [
         metadata.name: "test-ipam-minimal"
         spec = {
             compositionPath: "apis/ipams/composition.yaml"
-            xrPath: "examples/ipams/example-minimal.yaml"
+            xrPath: "examples/ipams/minimal.yaml"
             xrdPath: "apis/ipams/definition.yaml"
             timeoutSeconds: 120
             validate: True
@@ -107,7 +107,7 @@ _items = [
         metadata.name: "test-ipam-usages"
         spec = {
             compositionPath: "apis/ipams/composition.yaml"
-            xrPath: "examples/ipams/example-multi-region.yaml"
+            xrPath: "examples/ipams/multi-region.yaml"
             xrdPath: "apis/ipams/definition.yaml"
             timeoutSeconds: 120
             validate: True
@@ -465,7 +465,7 @@ _items = [
         metadata.name: "test-ipam-multi-region"
         spec = {
             compositionPath: "apis/ipams/composition.yaml"
-            xrPath: "examples/ipams/example-multi-region.yaml"
+            xrPath: "examples/ipams/multi-region.yaml"
             xrdPath: "apis/ipams/definition.yaml"
             timeoutSeconds: 120
             validate: True
@@ -573,7 +573,7 @@ _items = [
         metadata.name: "test-ipam-child-pool-usage"
         spec = {
             compositionPath: "apis/ipams/composition.yaml"
-            xrPath: "examples/ipams/example-with-subnet-pool.yaml"
+            xrPath: "examples/ipams/with-subnet-pool.yaml"
             xrdPath: "apis/ipams/definition.yaml"
             timeoutSeconds: 120
             validate: True
@@ -740,6 +740,408 @@ _items = [
                             }
                         }
                     }
+                }
+            ]
+        }
+    },
+    # Test IPv6 subnet pool inherits addressFamily from parent
+    metav1alpha1.CompositionTest{
+        metadata.name: "test-ipam-subnet-pool-address-family-inheritance"
+        spec = {
+            compositionPath: "apis/ipams/composition.yaml"
+            xrPath: "examples/ipams/with-subnet-pools.yaml"
+            xrdPath: "apis/ipams/definition.yaml"
+            timeoutSeconds: 120
+            validate: True
+            observedResources: [
+                {
+                    apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                    kind: "VPCIpam"
+                    metadata: {
+                        name: "dual-stack"
+                        annotations: {
+                            "gotemplating.fn.crossplane.io/composition-resource-name": "ipam"
+                            "crossplane.io/composition-resource-name": "ipam"
+                        }
+                    }
+                    status: {
+                        conditions: [{ type: "Ready", status: "True" }]
+                        atProvider: {
+                            id: "ipam-dualstack"
+                            arn: "arn:aws:ec2:us-east-1:123456789012:ipam/ipam-dualstack"
+                            privateDefaultScopeId: "ipam-scope-private-dualstack"
+                            publicDefaultScopeId: "ipam-scope-public-dualstack"
+                        }
+                    }
+                },
+                # IPv4 parent pool
+                {
+                    apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                    kind: "VPCIpamPool"
+                    metadata: {
+                        name: "dual-stack-ipv4-vpc"
+                        annotations: {
+                            "gotemplating.fn.crossplane.io/composition-resource-name": "ipam-pool-ipv4-vpc"
+                            "crossplane.io/composition-resource-name": "ipam-pool-ipv4-vpc"
+                        }
+                    }
+                    status: {
+                        conditions: [{ type: "Ready", status: "True" }]
+                        atProvider: {
+                            id: "ipam-pool-ipv4"
+                            arn: "arn:aws:ec2:us-east-1:123456789012:ipam-pool/ipam-pool-ipv4"
+                            ipamScopeId: "ipam-scope-private-dualstack"
+                        }
+                    }
+                },
+                {
+                    apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                    kind: "VPCIpamPoolCidr"
+                    metadata: {
+                        name: "dual-stack-ipv4-vpc-cidr"
+                        annotations: {
+                            "gotemplating.fn.crossplane.io/composition-resource-name": "ipam-pool-cidr-ipv4-vpc"
+                            "crossplane.io/composition-resource-name": "ipam-pool-cidr-ipv4-vpc"
+                        }
+                    }
+                    status: {
+                        conditions: [{ type: "Ready", status: "True" }]
+                        atProvider: { id: "ipam-pool-cidr-ipv4" }
+                    }
+                },
+                # IPv6 ULA parent pool
+                {
+                    apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                    kind: "VPCIpamPool"
+                    metadata: {
+                        name: "dual-stack-ipv6-ula"
+                        annotations: {
+                            "gotemplating.fn.crossplane.io/composition-resource-name": "ipam-pool-ipv6-ula"
+                            "crossplane.io/composition-resource-name": "ipam-pool-ipv6-ula"
+                        }
+                    }
+                    status: {
+                        conditions: [{ type: "Ready", status: "True" }]
+                        atProvider: {
+                            id: "ipam-pool-ipv6-ula"
+                            arn: "arn:aws:ec2:us-east-1:123456789012:ipam-pool/ipam-pool-ipv6-ula"
+                            ipamScopeId: "ipam-scope-private-dualstack"
+                        }
+                    }
+                },
+                {
+                    apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                    kind: "VPCIpamPoolCidr"
+                    metadata: {
+                        name: "dual-stack-ipv6-ula-cidr"
+                        annotations: {
+                            "gotemplating.fn.crossplane.io/composition-resource-name": "ipam-pool-cidr-ipv6-ula"
+                            "crossplane.io/composition-resource-name": "ipam-pool-cidr-ipv6-ula"
+                        }
+                    }
+                    status: {
+                        conditions: [{ type: "Ready", status: "True" }]
+                        atProvider: { id: "ipam-pool-cidr-ipv6-ula" }
+                    }
+                },
+                # IPv6 GUA parent pool (Amazon-provided)
+                {
+                    apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                    kind: "VPCIpamPool"
+                    metadata: {
+                        name: "dual-stack-ipv6-gua"
+                        annotations: {
+                            "gotemplating.fn.crossplane.io/composition-resource-name": "ipam-pool-ipv6-gua"
+                            "crossplane.io/composition-resource-name": "ipam-pool-ipv6-gua"
+                        }
+                    }
+                    status: {
+                        conditions: [{ type: "Ready", status: "True" }]
+                        atProvider: {
+                            id: "ipam-pool-ipv6-gua"
+                            arn: "arn:aws:ec2:us-east-1:123456789012:ipam-pool/ipam-pool-ipv6-gua"
+                            ipamScopeId: "ipam-scope-public-dualstack"
+                        }
+                    }
+                },
+                {
+                    apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                    kind: "VPCIpamPoolCidr"
+                    metadata: {
+                        name: "dual-stack-ipv6-gua-cidr"
+                        annotations: {
+                            "gotemplating.fn.crossplane.io/composition-resource-name": "ipam-pool-cidr-ipv6-gua"
+                            "crossplane.io/composition-resource-name": "ipam-pool-cidr-ipv6-gua"
+                        }
+                    }
+                    status: {
+                        conditions: [{ type: "Ready", status: "True" }]
+                        atProvider: { id: "ipam-pool-cidr-ipv6-gua" }
+                    }
+                }
+            ]
+            assertResources: [
+                # IPv4 parent pool should have addressFamily: ipv4
+                {
+                    apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                    kind: "VPCIpamPool"
+                    metadata: { name: "dual-stack-ipv4-vpc" }
+                    spec: {
+                        forProvider: {
+                            addressFamily: "ipv4"
+                            allocationDefaultNetmaskLength: 16
+                        }
+                    }
+                },
+                # IPv4 subnet pool should inherit addressFamily: ipv4
+                {
+                    apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                    kind: "VPCIpamPool"
+                    metadata: { name: "dual-stack-ipv4-vpc-subnets" }
+                    spec: {
+                        forProvider: {
+                            addressFamily: "ipv4"
+                            sourceIpamPoolId: "ipam-pool-ipv4"
+                            ipamScopeId: "ipam-scope-private-dualstack"
+                            allocationDefaultNetmaskLength: 24
+                            allocationMinNetmaskLength: 20
+                            allocationMaxNetmaskLength: 28
+                            description: "IPv4 subnet pool"
+                        }
+                    }
+                },
+                # IPv6 ULA parent pool should have addressFamily: ipv6
+                {
+                    apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                    kind: "VPCIpamPool"
+                    metadata: { name: "dual-stack-ipv6-ula" }
+                    spec: {
+                        forProvider: {
+                            addressFamily: "ipv6"
+                            allocationDefaultNetmaskLength: 60
+                        }
+                    }
+                },
+                # IPv6 ULA subnet pool should inherit addressFamily: ipv6 (NOT ipv4!)
+                {
+                    apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                    kind: "VPCIpamPool"
+                    metadata: { name: "dual-stack-ipv6-ula-subnets" }
+                    spec: {
+                        forProvider: {
+                            addressFamily: "ipv6"
+                            sourceIpamPoolId: "ipam-pool-ipv6-ula"
+                            ipamScopeId: "ipam-scope-private-dualstack"
+                            allocationDefaultNetmaskLength: 64
+                            allocationMinNetmaskLength: 60
+                            allocationMaxNetmaskLength: 64
+                            description: "IPv6 ULA subnet pool"
+                        }
+                    }
+                },
+                # IPv6 GUA parent pool should have addressFamily: ipv6
+                # Note: No subnet pool for GUA - AWS doesn't support child pools from Amazon-provided public IPv6 pools
+                {
+                    apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                    kind: "VPCIpamPool"
+                    metadata: { name: "dual-stack-ipv6-gua" }
+                    spec: {
+                        forProvider: {
+                            addressFamily: "ipv6"
+                            allocationDefaultNetmaskLength: 56
+                            publicIpSource: "amazon"
+                            awsService: "ec2"
+                        }
+                    }
+                }
+            ]
+        }
+    },
+    # Test managementPolicies cascade: subnetPool -> parent -> global
+    metav1alpha1.CompositionTest{
+        metadata.name: "test-ipam-management-policies-cascade"
+        spec = {
+            compositionPath: "apis/ipams/composition.yaml"
+            xrPath: "examples/ipams/management-policies.yaml"
+            xrdPath: "apis/ipams/definition.yaml"
+            timeoutSeconds: 120
+            validate: True
+            observedResources: [
+                {
+                    apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                    kind: "VPCIpam"
+                    metadata: {
+                        name: "mgmt-policy-test"
+                        annotations: {
+                            "gotemplating.fn.crossplane.io/composition-resource-name": "ipam"
+                            "crossplane.io/composition-resource-name": "ipam"
+                        }
+                    }
+                    status: {
+                        conditions: [{ type: "Ready", status: "True" }]
+                        atProvider: {
+                            id: "ipam-mgmt-test"
+                            arn: "arn:aws:ec2:us-east-1:123456789012:ipam/ipam-mgmt-test"
+                            privateDefaultScopeId: "ipam-scope-private-mgmt"
+                            publicDefaultScopeId: "ipam-scope-public-mgmt"
+                        }
+                    }
+                },
+                # Pool A - parent with Observe policy
+                {
+                    apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                    kind: "VPCIpamPool"
+                    metadata: {
+                        name: "mgmt-policy-test-pool-a"
+                        annotations: {
+                            "gotemplating.fn.crossplane.io/composition-resource-name": "ipam-pool-pool-a"
+                            "crossplane.io/composition-resource-name": "ipam-pool-pool-a"
+                        }
+                    }
+                    status: {
+                        conditions: [{ type: "Ready", status: "True" }]
+                        atProvider: {
+                            id: "ipam-pool-a"
+                            arn: "arn:aws:ec2:us-east-1:123456789012:ipam-pool/ipam-pool-a"
+                            ipamScopeId: "ipam-scope-private-mgmt"
+                        }
+                    }
+                },
+                {
+                    apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                    kind: "VPCIpamPoolCidr"
+                    metadata: {
+                        name: "mgmt-policy-test-pool-a-cidr"
+                        annotations: {
+                            "gotemplating.fn.crossplane.io/composition-resource-name": "ipam-pool-cidr-pool-a"
+                            "crossplane.io/composition-resource-name": "ipam-pool-cidr-pool-a"
+                        }
+                    }
+                    status: {
+                        conditions: [{ type: "Ready", status: "True" }]
+                        atProvider: { id: "ipam-pool-cidr-a" }
+                    }
+                },
+                # Pool B - parent with Observe policy, subnet pool will override
+                {
+                    apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                    kind: "VPCIpamPool"
+                    metadata: {
+                        name: "mgmt-policy-test-pool-b"
+                        annotations: {
+                            "gotemplating.fn.crossplane.io/composition-resource-name": "ipam-pool-pool-b"
+                            "crossplane.io/composition-resource-name": "ipam-pool-pool-b"
+                        }
+                    }
+                    status: {
+                        conditions: [{ type: "Ready", status: "True" }]
+                        atProvider: {
+                            id: "ipam-pool-b"
+                            arn: "arn:aws:ec2:us-east-1:123456789012:ipam-pool/ipam-pool-b"
+                            ipamScopeId: "ipam-scope-private-mgmt"
+                        }
+                    }
+                },
+                {
+                    apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                    kind: "VPCIpamPoolCidr"
+                    metadata: {
+                        name: "mgmt-policy-test-pool-b-cidr"
+                        annotations: {
+                            "gotemplating.fn.crossplane.io/composition-resource-name": "ipam-pool-cidr-pool-b"
+                            "crossplane.io/composition-resource-name": "ipam-pool-cidr-pool-b"
+                        }
+                    }
+                    status: {
+                        conditions: [{ type: "Ready", status: "True" }]
+                        atProvider: { id: "ipam-pool-cidr-b" }
+                    }
+                },
+                # Pool C - no explicit policies (global default)
+                {
+                    apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                    kind: "VPCIpamPool"
+                    metadata: {
+                        name: "mgmt-policy-test-pool-c"
+                        annotations: {
+                            "gotemplating.fn.crossplane.io/composition-resource-name": "ipam-pool-pool-c"
+                            "crossplane.io/composition-resource-name": "ipam-pool-pool-c"
+                        }
+                    }
+                    status: {
+                        conditions: [{ type: "Ready", status: "True" }]
+                        atProvider: {
+                            id: "ipam-pool-c"
+                            arn: "arn:aws:ec2:us-east-1:123456789012:ipam-pool/ipam-pool-c"
+                            ipamScopeId: "ipam-scope-private-mgmt"
+                        }
+                    }
+                },
+                {
+                    apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                    kind: "VPCIpamPoolCidr"
+                    metadata: {
+                        name: "mgmt-policy-test-pool-c-cidr"
+                        annotations: {
+                            "gotemplating.fn.crossplane.io/composition-resource-name": "ipam-pool-cidr-pool-c"
+                            "crossplane.io/composition-resource-name": "ipam-pool-cidr-pool-c"
+                        }
+                    }
+                    status: {
+                        conditions: [{ type: "Ready", status: "True" }]
+                        atProvider: { id: "ipam-pool-cidr-c" }
+                    }
+                }
+            ]
+            assertResources: [
+                # Pool A parent - should have ["Observe"]
+                {
+                    apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                    kind: "VPCIpamPool"
+                    metadata: { name: "mgmt-policy-test-pool-a" }
+                    spec: { managementPolicies: ["Observe"] }
+                },
+                # Pool A CIDR - should inherit ["Observe"] from pool
+                {
+                    apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                    kind: "VPCIpamPoolCidr"
+                    metadata: { name: "mgmt-policy-test-pool-a-cidr" }
+                    spec: { managementPolicies: ["Observe"] }
+                },
+                # Pool A subnet pool - should inherit ["Observe"] from parent pool
+                {
+                    apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                    kind: "VPCIpamPool"
+                    metadata: { name: "mgmt-policy-test-pool-a-subnets" }
+                    spec: { managementPolicies: ["Observe"] }
+                },
+                # Pool B parent - should have ["Observe"]
+                {
+                    apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                    kind: "VPCIpamPool"
+                    metadata: { name: "mgmt-policy-test-pool-b" }
+                    spec: { managementPolicies: ["Observe"] }
+                },
+                # Pool B subnet pool - should override with ["*"]
+                {
+                    apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                    kind: "VPCIpamPool"
+                    metadata: { name: "mgmt-policy-test-pool-b-subnets" }
+                    spec: { managementPolicies: ["*"] }
+                },
+                # Pool C parent - should have global default ["*"]
+                {
+                    apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                    kind: "VPCIpamPool"
+                    metadata: { name: "mgmt-policy-test-pool-c" }
+                    spec: { managementPolicies: ["*"] }
+                },
+                # Pool C subnet pool - should inherit global default ["*"]
+                {
+                    apiVersion: "ec2.aws.m.upbound.io/v1beta1"
+                    kind: "VPCIpamPool"
+                    metadata: { name: "mgmt-policy-test-pool-c-subnets" }
+                    spec: { managementPolicies: ["*"] }
                 }
             ]
         }

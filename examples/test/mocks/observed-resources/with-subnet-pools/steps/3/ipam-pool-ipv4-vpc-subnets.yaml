@@ -1,0 +1,16 @@
+# Step 3: IPv4 VPC subnet pool is Ready (auto-created with addressFamily: ipv4)
+apiVersion: ec2.aws.m.upbound.io/v1beta1
+kind: VPCIpamPool
+metadata:
+  name: dual-stack-ipv4-vpc-subnets
+  annotations:
+    gotemplating.fn.crossplane.io/composition-resource-name: ipam-pool-ipv4-vpc-subnets
+    crossplane.io/composition-resource-name: ipam-pool-ipv4-vpc-subnets
+status:
+  conditions:
+    - type: Ready
+      status: "True"
+  atProvider:
+    id: ipam-pool-ipv4-subnets
+    arn: arn:aws:ec2:us-east-1:123456789012:ipam-pool/ipam-pool-ipv4-subnets
+    ipamScopeId: ipam-scope-private-dualstack

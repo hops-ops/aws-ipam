@@ -196,6 +196,33 @@ spec:
     resourceRef:
       name: {{ $parentPoolResourceName }}
 
+        {{- /* Usage: child pool uses parent pool's CIDR */}}
+        {{- $parentPoolCidrResourceName := printf "%s-%s-cidr" $organizationName $sourcePoolRef }}
+        {{- $parentPoolCidrKey := printf "ipam-pool-cidr-%s" $sourcePoolRef }}
+        {{- $parentPoolCidrReady := get $resourceReadiness $parentPoolCidrKey | default false }}
+        {{- if $parentPoolCidrReady }}
+
+---
+apiVersion: protection.crossplane.io/v1beta1
+kind: Usage
+metadata:
+  name: {{ printf "of-ipam-pool-cidr-%s-by-child-pool-%s" $parentPoolCidrResourceName $poolResourceName }}
+  annotations:
+    {{ setResourceNameAnnotation (printf "ipam-child-pool-cidr-usage-%s" $poolName) }}
+spec:
+  replayDeletion: true
+  by:
+    apiVersion: ec2.aws.m.upbound.io/v1beta1
+    kind: VPCIpamPool
+    resourceRef:
+      name: {{ $poolResourceName }}
+  of:
+    apiVersion: ec2.aws.m.upbound.io/v1beta1
+    kind: VPCIpamPoolCidr
+    resourceRef:
+      name: {{ $parentPoolCidrResourceName }}
+
+        {{- end }}
       {{- end }}
     {{- end }}
 
@@ -259,5 +286,136 @@ spec:
       {{- end }}
     {{- end }}
 
+  {{- end }}
+{{- end }}
+
+{{- /* ============================================================================
+     Automatic Subnet Pools
+     For pools with subnetPool.enabled: true, create a child subnet pool
+     named ${poolName}-subnets that allocates from the parent pool.
+     ============================================================================ */}}
+{{- range $pool := $ipamPools }}
+  {{- $poolName := $pool.name }}
+  {{- $subnetPoolConfig := $pool.subnetPool | default (dict) }}
+  {{- $subnetPoolEnabled := $subnetPoolConfig.enabled | default false }}
+
+  {{- if $subnetPoolEnabled }}
+    {{- $subnetPoolName := printf "%s-subnets" $poolName }}
+    {{- $poolRegion := $pool.region | default $pool.locale | default $homeRegion }}
+    {{- $poolLocale := $pool.locale | default $poolRegion }}
+    {{- $subnetPoolDescription := $subnetPoolConfig.description | default (printf "Subnet pool for %s (auto-created)" $poolName) }}
+    {{- $subnetPoolTags := merge $defaultAWSTags ($subnetPoolConfig.tags | default (dict)) }}
+    {{- $subnetPoolLabels := dict "hops.ops.com.ai/organization" $organizationName "aws.hops.ops.com.ai/ipam-pool" $subnetPoolName "hops.ops.com.ai/parent-pool" $poolName "hops.ops.com.ai/auto-subnet-pool" "true" }}
+    {{- $subnetPoolResourceName := printf "%s-%s" $organizationName $subnetPoolName }}
+
+    {{- /* Inherit address family from parent pool */}}
+    {{- $subnetPoolAddressFamily := $pool.addressFamily | default "ipv4" }}
+
+    {{- /* managementPolicies cascade: subnetPool config -> parent pool -> global (defaults to *) */}}
+    {{- $subnetPoolMgmtPolicies := $subnetPoolConfig.managementPolicies | default ($pool.managementPolicies | default $managementPolicies) }}
+
+    {{- /* Allocation settings from subnetPool config */}}
+    {{- $subnetAllocationDefault := $subnetPoolConfig.allocationDefaultNetmaskLength }}
+    {{- $subnetAllocationMin := $subnetPoolConfig.allocationMinNetmaskLength }}
+    {{- $subnetAllocationMax := $subnetPoolConfig.allocationMaxNetmaskLength }}
+
+    {{- /* Get parent pool data - subnet pool needs parent to be Ready */}}
+    {{- $parentPoolData := get $observedPools $poolName | default (dict) }}
+    {{- $parentPoolId := get $parentPoolData "id" | default "" }}
+    {{- $parentPoolScopeId := get $parentPoolData "ipamScopeId" | default "" }}
+    {{- $parentPoolKey := printf "ipam-pool-%s" $poolName }}
+    {{- $parentPoolReady := get $resourceReadiness $parentPoolKey | default false }}
+
+    {{- /* Only render subnet pool when parent is Ready with valid ID and scope */}}
+    {{- if and $parentPoolReady $parentPoolId $parentPoolScopeId }}
+      {{- $subnetPoolKey := printf "ipam-pool-%s" $subnetPoolName }}
+      {{- $subnetPoolReady := get $resourceReadiness $subnetPoolKey | default false }}
+
+---
+apiVersion: ec2.aws.m.upbound.io/v1beta1
+kind: VPCIpamPool
+metadata:
+  name: {{ $subnetPoolResourceName }}
+  annotations:
+    {{ setResourceNameAnnotation (printf "ipam-pool-%s" $subnetPoolName) }}
+  labels:
+    {{- toYaml $subnetPoolLabels | nindent 4 }}
+spec:
+  managementPolicies: {{ toYaml $subnetPoolMgmtPolicies | nindent 4 }}
+  forProvider:
+    addressFamily: {{ $subnetPoolAddressFamily }}
+    description: {{ $subnetPoolDescription }}
+    sourceIpamPoolId: {{ $parentPoolId }}
+    ipamScopeId: {{ $parentPoolScopeId }}
+    locale: {{ $poolLocale }}
+    region: {{ $poolRegion }}
+    {{- if $subnetAllocationDefault }}
+    allocationDefaultNetmaskLength: {{ $subnetAllocationDefault }}
+    {{- end }}
+    {{- if $subnetAllocationMin }}
+    allocationMinNetmaskLength: {{ $subnetAllocationMin }}
+    {{- end }}
+    {{- if $subnetAllocationMax }}
+    allocationMaxNetmaskLength: {{ $subnetAllocationMax }}
+    {{- end }}
+    tags:
+      {{- toYaml $subnetPoolTags | nindent 6 }}
+  providerConfigRef:
+    kind: ProviderConfig
+    name: {{ $providerConfigName }}
+
+      {{- /* Usage: subnet pool uses parent pool */}}
+      {{- if $subnetPoolReady }}
+        {{- $parentPoolResourceName := printf "%s-%s" $organizationName $poolName }}
+
+---
+apiVersion: protection.crossplane.io/v1beta1
+kind: Usage
+metadata:
+  name: {{ printf "of-ipam-pool-%s-by-subnet-pool-%s" $parentPoolResourceName $subnetPoolResourceName }}
+  annotations:
+    {{ setResourceNameAnnotation (printf "ipam-subnet-pool-usage-%s" $subnetPoolName) }}
+spec:
+  replayDeletion: true
+  by:
+    apiVersion: ec2.aws.m.upbound.io/v1beta1
+    kind: VPCIpamPool
+    resourceRef:
+      name: {{ $subnetPoolResourceName }}
+  of:
+    apiVersion: ec2.aws.m.upbound.io/v1beta1
+    kind: VPCIpamPool
+    resourceRef:
+      name: {{ $parentPoolResourceName }}
+
+        {{- /* Usage: subnet pool uses parent pool's CIDR */}}
+        {{- $parentPoolCidrResourceName := printf "%s-%s-cidr" $organizationName $poolName }}
+        {{- $parentPoolCidrKey := printf "ipam-pool-cidr-%s" $poolName }}
+        {{- $parentPoolCidrReady := get $resourceReadiness $parentPoolCidrKey | default false }}
+        {{- if $parentPoolCidrReady }}
+
+---
+apiVersion: protection.crossplane.io/v1beta1
+kind: Usage
+metadata:
+  name: {{ printf "of-ipam-pool-cidr-%s-by-subnet-pool-%s" $parentPoolCidrResourceName $subnetPoolResourceName }}
+  annotations:
+    {{ setResourceNameAnnotation (printf "ipam-subnet-pool-cidr-usage-%s" $subnetPoolName) }}
+spec:
+  replayDeletion: true
+  by:
+    apiVersion: ec2.aws.m.upbound.io/v1beta1
+    kind: VPCIpamPool
+    resourceRef:
+      name: {{ $subnetPoolResourceName }}
+  of:
+    apiVersion: ec2.aws.m.upbound.io/v1beta1
+    kind: VPCIpamPoolCidr
+    resourceRef:
+      name: {{ $parentPoolCidrResourceName }}
+
+        {{- end }}
+      {{- end }}
+    {{- end }}
   {{- end }}
 {{- end }}

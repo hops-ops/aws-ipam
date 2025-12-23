@@ -12,8 +12,8 @@
 # Note: ULA (fd00::/8) CIDRs are NOT supported by AWS IPAM - only Amazon-provided GUA or BYOIP
 #
 # Pools created (ephemeral - deleted after test):
-# - aws-ipam-<timestamp>: test pool to verify create/delete cycle
-# - aws-ipam-<timestamp>-child: child pool testing sourcePoolRef feature
+# - aws-ipam-<timestamp>: test pool with automatic subnet pool
+# - aws-ipam-<timestamp>-subnets: auto-created child pool via subnetPool.enabled
 
 import base64
 import datetime
@@ -38,8 +38,10 @@ _home_region = "us-east-2"
 # Orphan management policies - no Delete means resources persist
 _persist = ["Create", "Observe", "Update", "LateInitialize"]
 
-# Ephemeral test pool name - deleted after test
+# Ephemeral test pool names - deleted after test
 _test_pool_name = "aws-ipam-" + _now
+_test_pool_ipv6_ula = "ipv6-ula-" + _now
+_test_pool_ipv6_gua = "ipv6-gua-" + _now
 
 # =============================================================================
 # Existing resource IDs (update after first successful run)
@@ -162,6 +164,7 @@ _items = [
                                 }
                             },
                             # Ephemeral test pool - deleted after test run
+                            # Uses subnetPool.enabled to auto-create child subnet pool
                             {
                                 name: _test_pool_name
                                 addressFamily: "ipv4"
@@ -176,33 +179,60 @@ _items = [
                                 labels: {
                                     "ephemeral": "true"
                                     "test-run": _now
+                                    "hops.ops.com.ai/global-pool": _test_pool_name
                                 }
                                 tags: {
                                     purpose: "e2e-test"
                                     "test-run": _now
                                 }
+                                # Auto-create subnet pool named ${name}-subnets
+                                subnetPool: {
+                                    enabled: True
+                                    allocationDefaultNetmaskLength: 28
+                                    allocationMinNetmaskLength: 26
+                                    allocationMaxNetmaskLength: 28
+                                    description: "Auto-created subnet pool for " + _test_pool_name
+                                    tags: {
+                                        purpose: "e2e-test-subnet-pool"
+                                        "test-run": _now
+                                    }
+                                }
                             },
-                            # Ephemeral child pool - tests sourcePoolRef feature
-                            # Creates a child pool that allocates from the parent's CIDR space
+                            # Ephemeral IPv6 Private Pool (ULA) with subnet pool
+                            # Tests that subnetPool inherits addressFamily: ipv6 from parent
                             {
-                                name: _test_pool_name + "-child"
-                                addressFamily: "ipv4"
+                                name: _test_pool_ipv6_ula
+                                addressFamily: "ipv6"
+                                scope: "private"
                                 region: _home_region
-                                sourcePoolRef: _test_pool_name
-                                # Full management - gets deleted with parent
+                                locale: _home_region
+                                netmaskLength: 56  # AWS auto-assigns ULA CIDR
                                 managementPolicies: ["*"]
-                                allocationDefaultNetmaskLength: 28
-                                allocationMinNetmaskLength: 26
-                                allocationMaxNetmaskLength: 28
-                                description: "Ephemeral child pool - " + _test_pool_name + "-child"
+                                allocationDefaultNetmaskLength: 60
+                                allocationMinNetmaskLength: 56
+                                allocationMaxNetmaskLength: 64
+                                description: "Ephemeral IPv6 ULA test pool - " + _test_pool_ipv6_ula
                                 labels: {
                                     "ephemeral": "true"
                                     "test-run": _now
-                                    "parent-pool": _test_pool_name
+                                    "address-family": "ipv6"
+                                    "ipv6-type": "private-ula"
                                 }
                                 tags: {
-                                    purpose: "e2e-test-child"
+                                    purpose: "e2e-test-ipv6-ula"
                                     "test-run": _now
+                                }
+                                # Auto-create subnet pool - should inherit ipv6 addressFamily
+                                subnetPool: {
+                                    enabled: True
+                                    allocationDefaultNetmaskLength: 64
+                                    allocationMinNetmaskLength: 60
+                                    allocationMaxNetmaskLength: 64
+                                    description: "Auto-created IPv6 ULA subnet pool for " + _test_pool_ipv6_ula
+                                    tags: {
+                                        purpose: "e2e-test-ipv6-ula-subnet-pool"
+                                        "test-run": _now
+                                    }
                                 }
                             }
                         ]

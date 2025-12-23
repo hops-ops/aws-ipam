@@ -4,22 +4,31 @@ PACKAGE ?= configuration-aws-ipam
 XRD_DIR := apis/ipams
 COMPOSITION := $(XRD_DIR)/composition.yaml
 DEFINITION := $(XRD_DIR)/definition.yaml
-EXAMPLE_DEFAULT := examples/ipams/example-minimal.yaml
+EXAMPLE_DEFAULT := examples/ipams/minimal.yaml
 RENDER_TESTS := $(wildcard tests/test-*)
 E2E_TESTS := $(wildcard tests/e2etest-*)
 
 # Examples list - mirrors GitHub Actions workflow
 # Format: example_path::observed_resources_path (observed_resources_path is optional)
 EXAMPLES := \
-	examples/ipams/example-minimal.yaml:: \
-	examples/ipams/example-multi-region.yaml:: \
-	examples/ipams/example-private-ipv6.yaml:: \
-	examples/ipams/example-private-ipv6.yaml::examples/observed-resources/example-private-ipv6/steps/1 \
-	examples/ipams/example-private-ipv6.yaml::examples/observed-resources/example-private-ipv6/steps/2 \
-	examples/ipams/example-private-ipv6.yaml::examples/observed-resources/example-private-ipv6/steps/3 \
-	examples/ipams/example-with-subnet-pool.yaml:: \
-	examples/ipams/example-with-subnet-pool.yaml::examples/observed-resources/example-with-subnet-pool/steps/1 \
-	examples/ipams/example-with-subnet-pool.yaml::examples/observed-resources/example-with-subnet-pool/steps/2
+	examples/ipams/minimal.yaml:: \
+	examples/ipams/multi-region.yaml:: \
+	examples/ipams/private-ipv6.yaml:: \
+	examples/ipams/private-ipv6.yaml::examples/test/mocks/observed-resources/private-ipv6/steps/1 \
+	examples/ipams/private-ipv6.yaml::examples/test/mocks/observed-resources/private-ipv6/steps/2 \
+	examples/ipams/private-ipv6.yaml::examples/test/mocks/observed-resources/private-ipv6/steps/3 \
+	examples/ipams/with-subnet-pool.yaml:: \
+	examples/ipams/with-subnet-pool.yaml::examples/test/mocks/observed-resources/with-subnet-pool/steps/1 \
+	examples/ipams/with-subnet-pool.yaml::examples/test/mocks/observed-resources/with-subnet-pool/steps/2 \
+	examples/ipams/with-subnet-pool.yaml::examples/test/mocks/observed-resources/with-subnet-pool/steps/3 \
+	examples/ipams/with-auto-subnet-pool.yaml:: \
+	examples/ipams/with-auto-subnet-pool.yaml::examples/test/mocks/observed-resources/with-auto-subnet-pool/steps/1 \
+	examples/ipams/with-auto-subnet-pool.yaml::examples/test/mocks/observed-resources/with-auto-subnet-pool/steps/2 \
+	examples/ipams/with-auto-subnet-pool.yaml::examples/test/mocks/observed-resources/with-auto-subnet-pool/steps/3 \
+	examples/ipams/with-subnet-pools.yaml:: \
+	examples/ipams/with-subnet-pools.yaml::examples/test/mocks/observed-resources/with-subnet-pools/steps/1 \
+	examples/ipams/with-subnet-pools.yaml::examples/test/mocks/observed-resources/with-subnet-pools/steps/2 \
+	examples/ipams/with-subnet-pools.yaml::examples/test/mocks/observed-resources/with-subnet-pools/steps/3
 
 clean:
 	rm -rf _output
