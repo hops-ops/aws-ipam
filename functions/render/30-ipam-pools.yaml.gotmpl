@@ -319,6 +319,9 @@ spec:
     {{- $subnetAllocationMin := $subnetPoolConfig.allocationMinNetmaskLength }}
     {{- $subnetAllocationMax := $subnetPoolConfig.allocationMaxNetmaskLength }}
 
+    {{- /* External name for subnet pool adoption */}}
+    {{- $subnetPoolExternalName := $subnetPoolConfig.externalName | default "" }}
+
     {{- /* Get parent pool data - subnet pool needs parent to be Ready */}}
     {{- $parentPoolData := get $observedPools $poolName | default (dict) }}
     {{- $parentPoolId := get $parentPoolData "id" | default "" }}
@@ -338,6 +341,9 @@ metadata:
   name: {{ $subnetPoolResourceName }}
   annotations:
     {{ setResourceNameAnnotation (printf "ipam-pool-%s" $subnetPoolName) }}
+    {{- if $subnetPoolExternalName }}
+    crossplane.io/external-name: {{ $subnetPoolExternalName | quote }}
+    {{- end }}
   labels:
     {{- toYaml $subnetPoolLabels | nindent 4 }}
 spec:

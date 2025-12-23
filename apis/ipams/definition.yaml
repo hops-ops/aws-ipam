@@ -266,6 +266,25 @@ spec:
                           type: boolean
                           description: Enable automatic subnet pool creation.
                           default: false
+                        externalName:
+                          type: string
+                          description: |
+                            IPAM Pool ID to adopt for the subnet pool (e.g., ipam-pool-0123456789abcdef0).
+                            When set, Crossplane imports the existing subnet pool instead of creating a new one.
+                        managementPolicies:
+                          type: array
+                          description: |
+                            ManagementPolicies for this subnet pool. Overrides parent pool's managementPolicies if set.
+                            Use to orphan the subnet pool on deletion while deleting the parent.
+                          items:
+                            type: string
+                            enum:
+                            - "*"
+                            - Create
+                            - Observe
+                            - Update
+                            - Delete
+                            - LateInitialize
                         allocationDefaultNetmaskLength:
                           type: integer
                           minimum: 0
