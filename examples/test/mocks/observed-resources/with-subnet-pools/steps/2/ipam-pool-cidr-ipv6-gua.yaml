@@ -1,4 +1,4 @@
-# Step 3: IPv6 GUA pool CIDR is Ready (Amazon-provided)
+# Step 2: IPv6 GUA pool CIDR is Ready (Amazon-provided)
 apiVersion: ec2.aws.m.upbound.io/v1beta1
 kind: VPCIpamPoolCidr
 metadata:
@@ -13,3 +13,4 @@ status:
   atProvider:
     id: ipam-pool-cidr-ipv6-gua
     cidr: "2600:1f26:47:c000::/52"
+    state: provisioned
