@@ -34,6 +34,7 @@ _base64_creds = base64.encode(_creds)
 _org_name = "hops"
 _composite_name = "hops-e2e-ipam"
 _home_region = "us-east-2"
+_alt_region = "us-west-2"
 
 # Orphan management policies - no Delete means resources persist
 _persist = ["Create", "Observe", "Update", "LateInitialize"]
@@ -242,8 +243,8 @@ _items = [
                                 name: _test_pool_ipv6_gua
                                 addressFamily: "ipv6"
                                 scope: "public"
-                                region: _home_region
-                                locale: _home_region
+                                region: _alt_region
+                                locale: _alt_region
                                 amazonProvidedIpv6CidrBlock: True
                                 publicIpSource: "amazon"
                                 awsService: "ec2"
