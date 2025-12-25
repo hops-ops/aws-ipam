@@ -408,10 +408,10 @@ spec:
               arn:
                 type: string
                 description: AWS IPAM ARN.
-              defaultPrivateScopeId:
+              privateDefaultScopeId:
                 type: string
                 description: IPAM's built-in default private scope ID.
-              defaultPublicScopeId:
+              publicDefaultScopeId:
                 type: string
                 description: IPAM's built-in default public scope ID.
               pools:

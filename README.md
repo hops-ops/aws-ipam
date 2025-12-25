@@ -283,8 +283,8 @@ status:
   ipam:
     id: ipam-0123456789abcdef0
     arn: arn:aws:ec2:us-east-1:111111111111:ipam/ipam-0123456789abcdef0
-    defaultPrivateScopeId: ipam-scope-abc123
-    defaultPublicScopeId: ipam-scope-xyz789
+    privateDefaultScopeId: ipam-scope-abc123
+    publicDefaultScopeId: ipam-scope-xyz789
     pools:
       - name: ipv4
         id: ipam-pool-abc123

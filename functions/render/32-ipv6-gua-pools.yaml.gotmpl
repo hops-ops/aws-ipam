@@ -54,8 +54,8 @@
       {{- $canRenderPool = false }}
     {{- end }}
   {{- else }}
-    # Public scope: needs IPAM's defaultPublicScopeId
-    {{- if not $observedDefaultPublicScopeId }}
+    # Public scope: needs IPAM's publicDefaultScopeId
+    {{- if not $observedPublicDefaultScopeId }}
       {{- $canRenderPool = false }}
     {{- end }}
   {{- end }}
@@ -110,7 +110,7 @@ spec:
     ipamScopeId: {{ $parentPoolScopeId }}
     {{- else }}
     # Public scope for GUA (internet-routable)
-    ipamScopeId: {{ $observedDefaultPublicScopeId }}
+    ipamScopeId: {{ $observedPublicDefaultScopeId }}
     {{- end }}
     locale: {{ $poolLocale }}
     region: {{ $poolRegion }}

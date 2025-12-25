@@ -78,8 +78,8 @@ kind: IPAM
 status:
   id: {{ $observedIpamId | default "" | quote }}
   arn: {{ $observedIpamArn | default "" | quote }}
-  defaultPrivateScopeId: {{ $observedDefaultPrivateScopeId | default "" | quote }}
-  defaultPublicScopeId: {{ $observedDefaultPublicScopeId | default "" | quote }}
+  privateDefaultScopeId: {{ $observedPrivateDefaultScopeId | default "" | quote }}
+  publicDefaultScopeId: {{ $observedPublicDefaultScopeId | default "" | quote }}
   pools:
     ipv4:
 {{- range $pool := $ipv4Pools }}

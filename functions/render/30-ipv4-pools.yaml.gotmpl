@@ -58,8 +58,8 @@
   {{- else if $usesCustomScope }}
     # Custom scope: no gating needed, ipamScopeIdRef handles the dependency
   {{- else }}
-    # Private scope (default): needs IPAM's defaultPrivateScopeId
-    {{- if not $observedDefaultPrivateScopeId }}
+    # Private scope (default): needs IPAM's privateDefaultScopeId
+    {{- if not $observedPrivateDefaultScopeId }}
       {{- $canRenderPool = false }}
     {{- end }}
   {{- end }}
@@ -117,7 +117,7 @@ spec:
       name: {{ printf "%s-scope-%s" $name $poolScopeRef }}
     {{- else }}
     # Private scope (default for IPv4)
-    ipamScopeId: {{ $observedDefaultPrivateScopeId }}
+    ipamScopeId: {{ $observedPrivateDefaultScopeId }}
     {{- end }}
     locale: {{ $poolLocale }}
     region: {{ $poolRegion }}

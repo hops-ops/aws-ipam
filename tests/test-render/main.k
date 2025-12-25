@@ -31,8 +31,8 @@ _items = [
                         atProvider: {
                             id: "ipam-0123456789abcdef0"
                             arn: "arn:aws:ec2:us-west-2:123456789012:ipam/ipam-0123456789abcdef0"
-                            defaultPrivateScopeId: "ipam-scope-private-0123456789"
-                            defaultPublicScopeId: "ipam-scope-public-0123456789"
+                            privateDefaultScopeId: "ipam-scope-private-0123456789"
+                            publicDefaultScopeId: "ipam-scope-public-0123456789"
                         }
                     }
                 }
@@ -122,8 +122,8 @@ _items = [
                         atProvider: {
                             id: "ipam-dualstack"
                             arn: "arn:aws:ec2:us-east-1:123456789012:ipam/ipam-dualstack"
-                            defaultPrivateScopeId: "ipam-scope-private-dualstack"
-                            defaultPublicScopeId: "ipam-scope-public-dualstack"
+                            privateDefaultScopeId: "ipam-scope-private-dualstack"
+                            publicDefaultScopeId: "ipam-scope-public-dualstack"
                         }
                     }
                 }
@@ -197,8 +197,8 @@ _items = [
                         atProvider: {
                             id: "ipam-mgmt-test"
                             arn: "arn:aws:ec2:us-east-1:123456789012:ipam/ipam-mgmt-test"
-                            defaultPrivateScopeId: "ipam-scope-private-mgmt"
-                            defaultPublicScopeId: "ipam-scope-public-mgmt"
+                            privateDefaultScopeId: "ipam-scope-private-mgmt"
+                            publicDefaultScopeId: "ipam-scope-public-mgmt"
                         }
                     }
                 }
