@@ -33,7 +33,6 @@ _base64_creds = base64.encode(_creds)
 # Configuration - shared with aws-foundation e2e test
 # =============================================================================
 
-_org_name = "hops"
 _composite_name = "hops-e2e-ipam"
 _home_region = "us-east-2"
 
@@ -85,11 +84,7 @@ _items = [
                         namespace: "default"
                     }
                     spec: {
-                        organizationName: _org_name
-                        providerConfigName: "default"
                         managementPolicies: _persist
-                        managementMode: "self"
-                        scope: "private"
                         region: _home_region
                         operatingRegions: [_home_region]
                         if _ipam_external_name:
