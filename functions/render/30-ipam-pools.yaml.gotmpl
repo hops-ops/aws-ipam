@@ -11,8 +11,8 @@
 #
 # Scope Resolution:
 # - scopeRef set: Uses custom scope defined in spec.scopes
-# - scope: public: Uses IPAM's publicDefaultScopeId (must wait for IPAM to be Ready)
-# - scope: private (default): Uses IPAM's privateDefaultScopeId (must wait for IPAM)
+# - scope: public: Uses IPAM's defaultPublicScopeId (must wait for IPAM to be Ready)
+# - scope: private (default): Uses IPAM's defaultPrivateScopeId (must wait for IPAM)
 # - child pool: Inherits scope from parent pool
 #
 
@@ -65,8 +65,8 @@
   # ===========================================================================
   # We must wait for dependencies before rendering:
   # - Child pools: Wait for parent to be Ready with valid ID and scope
-  # - Public scope pools: Wait for IPAM's publicDefaultScopeId
-  # - Private scope pools: Wait for IPAM's privateDefaultScopeId
+  # - Public scope pools: Wait for IPAM's defaultPublicScopeId
+  # - Private scope pools: Wait for IPAM's defaultPrivateScopeId
   # - Custom scope pools: Can render immediately (scope ref handles dependency)
   #
   {{- $canRenderPool := true }}
@@ -81,14 +81,14 @@
     # Custom scope: no gating needed, ipamScopeIdRef handles the dependency
 
   {{- else if $isPublicPool }}
-    # Public scope: needs IPAM's publicDefaultScopeId
-    {{- if not $observedPublicDefaultScopeId }}
+    # Public scope: needs IPAM's defaultPublicScopeId
+    {{- if not $observeddefaultPublicScopeId }}
       {{- $canRenderPool = false }}
     {{- end }}
 
   {{- else }}
-    # Private scope (default): needs IPAM's privateDefaultScopeId
-    {{- if not $observedPrivateDefaultScopeId }}
+    # Private scope (default): needs IPAM's defaultPrivateScopeId
+    {{- if not $observeddefaultPrivateScopeId }}
       {{- $canRenderPool = false }}
     {{- end }}
 
@@ -147,10 +147,10 @@ spec:
       name: {{ printf "%s-scope-%s" $name $poolScopeRef }}
     {{- else if $isPublicPool }}
     # Public scope: use IPAM's default public scope
-    ipamScopeId: {{ $observedPublicDefaultScopeId }}
+    ipamScopeId: {{ $observeddefaultPublicScopeId }}
     {{- else }}
     # Private scope (default): use IPAM's default private scope
-    ipamScopeId: {{ $observedPrivateDefaultScopeId }}
+    ipamScopeId: {{ $observeddefaultPrivateScopeId }}
     {{- end }}
     locale: {{ $poolLocale }}
     region: {{ $poolRegion }}

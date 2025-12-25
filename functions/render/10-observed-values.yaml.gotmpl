@@ -33,8 +33,8 @@
 # IPAM Observed Values
 # ==============================================================================
 # The IPAM must be observed before pools can reference its default scopes.
-# Pools using scope: private need $observedPrivateDefaultScopeId
-# Pools using scope: public need $observedPublicDefaultScopeId
+# Pools using scope: private need $observeddefaultPrivateScopeId
+# Pools using scope: public need $observeddefaultPublicScopeId
 #
 {{ $ipamObs := get $observed "ipam" | default (dict) }}
 {{ $ipamResource := $ipamObs.resource | default (dict) }}
@@ -43,8 +43,8 @@
 
 {{ $observedIpamId := $ipamAtProvider.id | default "" }}
 {{ $observedIpamArn := $ipamAtProvider.arn | default "" }}
-{{ $observedPublicDefaultScopeId := $ipamAtProvider.publicDefaultScopeId | default "" }}
-{{ $observedPrivateDefaultScopeId := $ipamAtProvider.privateDefaultScopeId | default "" }}
+{{ $observeddefaultPublicScopeId := $ipamAtProvider.defaultPublicScopeId | default "" }}
+{{ $observeddefaultPrivateScopeId := $ipamAtProvider.defaultPrivateScopeId | default "" }}
 
 # ==============================================================================
 # Pool Observed Values

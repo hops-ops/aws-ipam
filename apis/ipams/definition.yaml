@@ -224,46 +224,32 @@ spec:
                       x-kubernetes-preserve-unknown-fields: true
           status:
             type: object
-            description: Observed state of the rendered IPAM resources.
+            description: Observed state of the IPAM resources.
             properties:
-              ipam:
-                type: object
-                properties:
-                  name:
-                    type: string
-                  region:
-                    type: string
-                  arn:
-                    type: string
-                  id:
-                    type: string
-                  privateDefaultScopeId:
-                    type: string
-                    description: IPAM's built-in default private scope ID.
-                  publicDefaultScopeId:
-                    type: string
-                    description: IPAM's built-in default public scope ID.
-                  pools:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        name:
-                          type: string
-                        region:
-                          type: string
-                        locale:
-                          type: string
-                        id:
-                          type: string
-                        arn:
-                          type: string
-                        cidr:
-                          type: string
-                        allocationDefaultNetmaskLength:
-                          type: integer
-                        allocationMinNetmaskLength:
-                          type: integer
-                        allocationMaxNetmaskLength:
-                          type: integer
+              id:
+                type: string
+                description: AWS IPAM ID.
+              arn:
+                type: string
+                description: AWS IPAM ARN.
+              defaultPrivateScopeId:
+                type: string
+                description: IPAM's built-in default private scope ID.
+              defaultPublicScopeId:
+                type: string
+                description: IPAM's built-in default public scope ID.
+              pools:
+                type: array
+                description: Observed state of IPAM pools.
+                items:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    id:
+                      type: string
+                    arn:
+                      type: string
+                    cidr:
+                      type: string
         

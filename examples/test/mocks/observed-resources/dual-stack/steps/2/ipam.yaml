@@ -15,5 +15,5 @@ status:
   atProvider:
     id: ipam-0123456789abcdef0
     arn: arn:aws:ec2:us-east-1:123456789012:ipam/ipam-0123456789abcdef0
-    privateDefaultScopeId: ipam-scope-0123456789abcdef0
-    publicDefaultScopeId: ipam-scope-0123456789abcdef1
+    defaultPrivateScopeId: ipam-scope-0123456789abcdef0
+    defaultPublicScopeId: ipam-scope-0123456789abcdef1

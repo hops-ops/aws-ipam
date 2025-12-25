@@ -8,36 +8,19 @@
 apiVersion: aws.hops.ops.com.ai/v1alpha1
 kind: IPAM
 status:
-  # --- IPAM observed values ---
-  ipam:
-    name: {{ $name | quote }}
-    region: {{ $region | quote }}
-    id: {{ $observedIpamId | default "" | quote }}
-    arn: {{ $observedIpamArn | default "" | quote }}
-    privateDefaultScopeId: {{ $observedPrivateDefaultScopeId | default "" | quote }}
-    publicDefaultScopeId: {{ $observedPublicDefaultScopeId | default "" | quote }}
-
-    # --- Pool observed values ---
-    pools:
+  id: {{ $observedIpamId | default "" | quote }}
+  arn: {{ $observedIpamArn | default "" | quote }}
+  defaultPrivateScopeId: {{ $observeddefaultPrivateScopeId | default "" | quote }}
+  defaultPublicScopeId: {{ $observeddefaultPublicScopeId | default "" | quote }}
+  pools:
 {{- range $pool := $ipamPools }}
-      {{- $poolRegion := $pool.region | default $pool.locale | default $region }}
-      {{- $poolStatus := get $observedPools $pool.name | default (dict) }}
-      - name: {{ $pool.name | quote }}
-        region: {{ $poolRegion | quote }}
-        locale: {{ $pool.locale | default $poolRegion | quote }}
-        id: {{ $poolStatus.id | default "" | quote }}
-        arn: {{ $poolStatus.arn | default "" | quote }}
-        {{- if $pool.cidr }}
-        cidr: {{ $pool.cidr | quote }}
-        {{- end }}
-        {{- if $pool.allocationDefaultNetmaskLength }}
-        allocationDefaultNetmaskLength: {{ $pool.allocationDefaultNetmaskLength }}
-        {{- end }}
-        {{- if $pool.allocationMinNetmaskLength }}
-        allocationMinNetmaskLength: {{ $pool.allocationMinNetmaskLength }}
-        {{- end }}
-        {{- if $pool.allocationMaxNetmaskLength }}
-        allocationMaxNetmaskLength: {{ $pool.allocationMaxNetmaskLength }}
-        {{- end }}
+    {{- $poolStatus := get $observedPools $pool.name | default (dict) }}
+    - name: {{ $pool.name | quote }}
+      id: {{ $poolStatus.id | default "" | quote }}
+      arn: {{ $poolStatus.arn | default "" | quote }}
+      {{- if $poolStatus.cidr }}
+      cidr: {{ $poolStatus.cidr | quote }}
+      {{- else if $pool.cidr }}
+      cidr: {{ $pool.cidr | quote }}
+      {{- end }}
 {{- end }}
-
