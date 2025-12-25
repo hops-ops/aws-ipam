@@ -22,9 +22,11 @@ spec:
       - name: ipv4
         region: us-east-1
         cidr: 10.0.0.0/8
-        allocationDefaultNetmaskLength: 12
-        allocationMinNetmaskLength: 12
-        allocationMaxNetmaskLength: 12
+        allocations:
+          netmaskLength:
+            default: 12
+            min: 12
+            max: 12
         description: Global IPv4 pool
         labels:
           pool-type: global
@@ -35,9 +37,11 @@ spec:
         region: us-east-1
         locale: us-east-1
         cidr: 10.0.0.0/12
-        allocationDefaultNetmaskLength: 16
-        allocationMinNetmaskLength: 16
-        allocationMaxNetmaskLength: 16
+        allocations:
+          netmaskLength:
+            default: 16
+            min: 16
+            max: 16
         description: Regional IPv4 pool for us-east-1
         labels:
           pool-type: regional
@@ -51,9 +55,11 @@ spec:
           region: us-east-1
           locale: us-east-1
           netmaskLength: 48
-          allocationDefaultNetmaskLength: 56
-          allocationMinNetmaskLength: 56
-          allocationMaxNetmaskLength: 56
+          allocations:
+            netmaskLength:
+              default: 56
+              min: 56
+              max: 56
           description: Global IPv6 private pool (ULA)
           labels:
             ipv6-type: ula
@@ -65,9 +71,11 @@ spec:
           region: us-east-1
           locale: us-east-1
           netmaskLength: 56
-          allocationDefaultNetmaskLength: 64
-          allocationMinNetmaskLength: 64
-          allocationMaxNetmaskLength: 64
+          allocations:
+            netmaskLength:
+              default: 64
+              min: 64
+              max: 64
           description: Regional IPv6 private pool for us-east-1
           labels:
             ipv6-type: ula
@@ -80,9 +88,11 @@ spec:
           region: us-east-1
           locale: us-east-1
           netmaskLength: 52
-          allocationDefaultNetmaskLength: 56
-          allocationMinNetmaskLength: 52
-          allocationMaxNetmaskLength: 60
+          allocations:
+            netmaskLength:
+              default: 56
+              min: 52
+              max: 60
           description: Global IPv6 public pool (Amazon GUA)
           labels:
             ipv6-type: gua

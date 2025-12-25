@@ -49,7 +49,6 @@
   # ===========================================================================
   # Rendering Gate
   # ===========================================================================
-  # IPv4 pools always use private scope
   {{- $canRenderPool := true }}
 
   {{- if $isChildPool }}
@@ -78,9 +77,11 @@
     {{- $poolResourceName := printf "%s-%s" $name $poolName }}
     {{- $poolCidrResourceName := printf "%s-%s-cidr" $name $poolName }}
     {{- $poolDescription := $pool.description | default (printf "%s pool for %s" $poolName $name) }}
-    {{- $allocationDefault := $pool.allocationDefaultNetmaskLength }}
-    {{- $allocationMin := $pool.allocationMinNetmaskLength }}
-    {{- $allocationMax := $pool.allocationMaxNetmaskLength }}
+    {{- $allocations := $pool.allocations | default (dict) }}
+    {{- $netmaskLength := $allocations.netmaskLength | default (dict) }}
+    {{- $allocationDefault := $netmaskLength.default }}
+    {{- $allocationMin := $netmaskLength.min }}
+    {{- $allocationMax := $netmaskLength.max }}
 
     # --- Readiness for Usage resources ---
     {{- $poolKey := printf "ipam-pool-%s" $poolName }}

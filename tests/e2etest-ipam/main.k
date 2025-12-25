@@ -103,9 +103,13 @@ _items = [
                                     cidr: "10.0.0.0/8"
                                     managementPolicies: _persist
                                     # Allocations from this pool are /12 regional pools
-                                    allocationDefaultNetmaskLength: 12
-                                    allocationMinNetmaskLength: 12
-                                    allocationMaxNetmaskLength: 12
+                                    allocations: {
+                                        netmaskLength: {
+                                            default: 12
+                                            min: 12
+                                            max: 12
+                                        }
+                                    }
                                     description: "Global IPv4 pool"
                                     if _ipv4_global_pool_external_name:
                                         externalName: _ipv4_global_pool_external_name
@@ -131,9 +135,13 @@ _items = [
                                     cidr: "10.0.0.0/12"  # 10.0.0.0 - 10.15.255.255
                                     managementPolicies: _persist
                                     # Allocations from this pool are /16-/20 VPCs
-                                    allocationDefaultNetmaskLength: 16
-                                    allocationMinNetmaskLength: 16
-                                    allocationMaxNetmaskLength: 16
+                                    allocations: {
+                                        netmaskLength: {
+                                            default: 16
+                                            min: 16
+                                            max: 16
+                                        }
+                                    }
                                     description: "Regional IPv4 pool for us-east-2"
                                     if _ipv4_regional_useast2_external_name:
                                         externalName: _ipv4_regional_useast2_external_name
@@ -155,9 +163,13 @@ _items = [
                                     region: _home_region
                                     cidr: "172.31.0.0/16"
                                     managementPolicies: ["*"]  # Full management - gets deleted
-                                    allocationDefaultNetmaskLength: 24
-                                    allocationMinNetmaskLength: 20
-                                    allocationMaxNetmaskLength: 28
+                                    allocations: {
+                                        netmaskLength: {
+                                            default: 24
+                                            min: 20
+                                            max: 28
+                                        }
+                                    }
                                     description: "Ephemeral test pool - " + _test_pool_name
                                     labels: {
                                         "ephemeral": "true"
@@ -185,9 +197,13 @@ _items = [
                                         netmaskLength: 48
                                         managementPolicies: _persist
                                         # Allocations are /56 VPCs
-                                        allocationDefaultNetmaskLength: 56
-                                        allocationMinNetmaskLength: 56
-                                        allocationMaxNetmaskLength: 56
+                                        allocations: {
+                                            netmaskLength: {
+                                                default: 56
+                                                min: 56
+                                                max: 56
+                                            }
+                                        }
                                         description: "Global IPv6 private pool (ULA /48)"
                                         if _ipv6_private_pool_external_name:
                                             externalName: _ipv6_private_pool_external_name
@@ -211,9 +227,13 @@ _items = [
                                         locale: _home_region
                                         netmaskLength: 56  # Allocated from parent's /48
                                         managementPolicies: ["*"]  # Full management - gets deleted
-                                        allocationDefaultNetmaskLength: 60
-                                        allocationMinNetmaskLength: 56
-                                        allocationMaxNetmaskLength: 64
+                                        allocations: {
+                                            netmaskLength: {
+                                                default: 60
+                                                min: 56
+                                                max: 64
+                                            }
+                                        }
                                         description: "Ephemeral IPv6 ULA test pool - " + _test_pool_ipv6_ula
                                         labels: {
                                             "ephemeral": "true"
@@ -237,9 +257,13 @@ _items = [
                                         netmaskLength: 52  # AWS provisions /52 GUA block
                                         managementPolicies: _persist
                                         # Allocations are /56 per VPC
-                                        allocationDefaultNetmaskLength: 56
-                                        allocationMinNetmaskLength: 52
-                                        allocationMaxNetmaskLength: 60
+                                        allocations: {
+                                            netmaskLength: {
+                                                default: 56
+                                                min: 52
+                                                max: 60
+                                            }
+                                        }
                                         description: "Global IPv6 public pool (Amazon GUA)"
                                         if _ipv6_public_pool_external_name:
                                             externalName: _ipv6_public_pool_external_name

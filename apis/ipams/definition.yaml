@@ -152,7 +152,7 @@ spec:
                           description: Base CIDR for the pool (e.g., 10.0.0.0/8).
                         netmaskLength:
                           type: integer
-                          minimum: 0
+                          minimum: 8
                           maximum: 32
                           description: Netmask length for auto-assigned CIDR. Conflicts with cidr.
                         cidrExternalName:
@@ -172,21 +172,29 @@ spec:
                         description:
                           type: string
                           description: Optional description attached to the pool.
-                        allocationDefaultNetmaskLength:
-                          type: integer
-                          minimum: 0
-                          maximum: 32
-                          description: Default netmask length assigned to new allocations.
-                        allocationMinNetmaskLength:
-                          type: integer
-                          minimum: 0
-                          maximum: 32
-                          description: Minimum netmask length allowed within the pool.
-                        allocationMaxNetmaskLength:
-                          type: integer
-                          minimum: 0
-                          maximum: 32
-                          description: Maximum netmask length allowed within the pool.
+                        allocations:
+                          type: object
+                          description: Allocation constraints for this pool.
+                          properties:
+                            netmaskLength:
+                              type: object
+                              description: Netmask length constraints for allocations from this pool.
+                              properties:
+                                default:
+                                  type: integer
+                                  minimum: 8
+                                  maximum: 32
+                                  description: Default netmask length assigned to new allocations.
+                                min:
+                                  type: integer
+                                  minimum: 8
+                                  maximum: 32
+                                  description: Minimum netmask length allowed within the pool.
+                                max:
+                                  type: integer
+                                  minimum: 8
+                                  maximum: 32
+                                  description: Maximum netmask length allowed within the pool.
                         labels:
                           type: object
                           description: Labels propagated to VpcIpamPool resources.
@@ -258,21 +266,29 @@ spec:
                             description:
                               type: string
                               description: Optional description attached to the pool.
-                            allocationDefaultNetmaskLength:
-                              type: integer
-                              minimum: 0
-                              maximum: 128
-                              description: Default netmask length assigned to new allocations.
-                            allocationMinNetmaskLength:
-                              type: integer
-                              minimum: 0
-                              maximum: 128
-                              description: Minimum netmask length allowed within the pool.
-                            allocationMaxNetmaskLength:
-                              type: integer
-                              minimum: 0
-                              maximum: 128
-                              description: Maximum netmask length allowed within the pool.
+                            allocations:
+                              type: object
+                              description: Allocation constraints for this pool.
+                              properties:
+                                netmaskLength:
+                                  type: object
+                                  description: Netmask length constraints for allocations from this pool.
+                                  properties:
+                                    default:
+                                      type: integer
+                                      minimum: 9
+                                      maximum: 128
+                                      description: Default netmask length assigned to new allocations.
+                                    min:
+                                      type: integer
+                                      minimum: 9
+                                      maximum: 128
+                                      description: Minimum netmask length allowed within the pool.
+                                    max:
+                                      type: integer
+                                      minimum: 9
+                                      maximum: 128
+                                      description: Maximum netmask length allowed within the pool.
                             labels:
                               type: object
                               description: Labels propagated to VpcIpamPool resources.
@@ -319,9 +335,12 @@ spec:
                               x-kubernetes-preserve-unknown-fields: true
                             netmaskLength:
                               type: integer
-                              minimum: 0
-                              maximum: 128
-                              description: Netmask length for the Amazon-provided IPv6 CIDR block.
+                              minimum: 40
+                              maximum: 52
+                              default: 52
+                              description: |
+                                Netmask length for the Amazon-provided IPv6 CIDR block.
+                                AWS limits this to /40-/52. Default /52 provides 16 VPC allocations.
                             cidrExternalName:
                               type: string
                               description: VPCIpamPoolCidr external name to adopt.
@@ -345,21 +364,32 @@ spec:
                             description:
                               type: string
                               description: Optional description attached to the pool.
-                            allocationDefaultNetmaskLength:
-                              type: integer
-                              minimum: 0
-                              maximum: 128
-                              description: Default netmask length assigned to new allocations.
-                            allocationMinNetmaskLength:
-                              type: integer
-                              minimum: 0
-                              maximum: 128
-                              description: Minimum netmask length allowed within the pool.
-                            allocationMaxNetmaskLength:
-                              type: integer
-                              minimum: 0
-                              maximum: 128
-                              description: Maximum netmask length allowed within the pool.
+                            allocations:
+                              type: object
+                              description: |
+                                Allocation constraints for VPCs from this pool.
+                                VPCs support /44 to /60 in increments of /4 (e.g., /44, /48, /52, /56, /60).
+                              properties:
+                                netmaskLength:
+                                  type: object
+                                  description: Netmask length constraints for VPC allocations.
+                                  properties:
+                                    default:
+                                      type: integer
+                                      minimum: 44
+                                      maximum: 60
+                                      default: 56
+                                      description: Default netmask for VPC allocations. Must be /44, /48, /52, /56, or /60.
+                                    min:
+                                      type: integer
+                                      minimum: 44
+                                      maximum: 60
+                                      description: Minimum netmask allowed. Must be /44, /48, /52, /56, or /60.
+                                    max:
+                                      type: integer
+                                      minimum: 44
+                                      maximum: 60
+                                      description: Maximum netmask allowed. Must be /44, /48, /52, /56, or /60.
                             labels:
                               type: object
                               description: Labels propagated to VpcIpamPool resources.

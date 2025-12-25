@@ -47,9 +47,11 @@ spec:
       addressFamily: ipv4
       region: us-east-1
       cidr: 10.0.0.0/8
-      allocationDefaultNetmaskLength: 20  # /20 = 4096 IPs per VPC
-      allocationMinNetmaskLength: 16
-      allocationMaxNetmaskLength: 24
+      allocations:
+        netmaskLength:
+          default: 20  # /20 = 4096 IPs per VPC
+          min: 16
+          max: 24
       description: IPv4 pool for VPCs
 ```
 
@@ -72,7 +74,9 @@ pools:
     addressFamily: ipv4
     region: us-east-1
     cidr: 10.0.0.0/8
-    allocationDefaultNetmaskLength: 20
+    allocations:
+      netmaskLength:
+        default: 20
 
   # IPv6 public - Amazon provides /52, you allocate /56 per VPC
   - name: ipv6-public
@@ -84,9 +88,11 @@ pools:
     publicIpSource: amazon
     awsService: ec2
     netmaskLength: 52  # AWS provisions /52 block
-    allocationDefaultNetmaskLength: 56  # /56 per VPC
-    allocationMinNetmaskLength: 52
-    allocationMaxNetmaskLength: 60
+    allocations:
+      netmaskLength:
+        default: 56  # /56 per VPC
+        min: 52
+        max: 60
     description: Public IPv6 for internet-facing workloads
 
   # IPv6 private - AWS auto-assigns from fd00::/8 ULA range
@@ -96,9 +102,11 @@ pools:
     region: us-east-1
     locale: us-east-1
     netmaskLength: 48  # AWS auto-assigns ULA CIDR
-    allocationDefaultNetmaskLength: 56
-    allocationMinNetmaskLength: 48
-    allocationMaxNetmaskLength: 64
+    allocations:
+      netmaskLength:
+        default: 56
+        min: 48
+        max: 64
     description: Private IPv6 for internal services
 ```
 
@@ -129,21 +137,27 @@ spec:
       addressFamily: ipv4
       region: us-east-1
       cidr: 10.0.0.0/12    # 10.0.0.0 - 10.15.255.255
-      allocationDefaultNetmaskLength: 20
+      allocations:
+        netmaskLength:
+          default: 20
 
     # US West
     - name: us-west-2-ipv4
       addressFamily: ipv4
       region: us-west-2
       cidr: 10.16.0.0/12   # 10.16.0.0 - 10.31.255.255
-      allocationDefaultNetmaskLength: 20
+      allocations:
+        netmaskLength:
+          default: 20
 
     # EU
     - name: eu-west-1-ipv4
       addressFamily: ipv4
       region: eu-west-1
       cidr: 10.32.0.0/12   # 10.32.0.0 - 10.47.255.255
-      allocationDefaultNetmaskLength: 20
+      allocations:
+        netmaskLength:
+          default: 20
 ```
 
 ### Stage 4: Multi-Account with RAM Sharing
@@ -174,7 +188,9 @@ spec:
       addressFamily: ipv4
       region: us-east-1
       cidr: 10.0.0.0/12
-      allocationDefaultNetmaskLength: 20
+      allocations:
+        netmaskLength:
+          default: 20
       ramShareTargets:
         - ou: ou-abc1-prod  # Share with entire OU
 
@@ -183,7 +199,9 @@ spec:
       addressFamily: ipv4
       region: us-east-1
       cidr: 10.16.0.0/12
-      allocationDefaultNetmaskLength: 20
+      allocations:
+        netmaskLength:
+          default: 20
       ramShareTargets:
         - ou: ou-abc1-nonprod
 
@@ -192,7 +210,9 @@ spec:
       addressFamily: ipv4
       region: us-east-1
       cidr: 10.32.0.0/16
-      allocationDefaultNetmaskLength: 24
+      allocations:
+        netmaskLength:
+          default: 24
       ramShareTargets:
         - account: "111111111111"
 ```
@@ -231,7 +251,9 @@ spec:
       externalName: ipam-pool-0123456789abcdef0
       cidrExternalName: 10.0.0.0/8_ipam-pool-0123456789abcdef0
       managementPolicies: ["Create", "Observe", "Update", "LateInitialize"]
-      allocationDefaultNetmaskLength: 20
+      allocations:
+        netmaskLength:
+          default: 20
 ```
 
 ## Using IPAM Pools
@@ -267,11 +289,9 @@ status:
       - name: ipv4
         id: ipam-pool-abc123
         cidr: 10.0.0.0/8
-        allocationDefaultNetmaskLength: 20
       - name: ipv6-public
         id: ipam-pool-xyz789
         cidr: 2600:1f26:47:c000::/52
-        allocationDefaultNetmaskLength: 56
 ```
 
 ## IPv6 Pool Sizing Reference
