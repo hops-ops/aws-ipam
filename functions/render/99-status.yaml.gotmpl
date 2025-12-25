@@ -3,8 +3,76 @@
 # Status Output
 # =============
 # Surface observed values to the XR status for users to read.
+# Controls Ready condition based on actual resource completion.
 #
 
+# ==============================================================================
+# Ready Condition Logic
+# ==============================================================================
+# 1. Check ALL observed resources have Ready=True (like function-auto-ready)
+# 2. Add custom logic: desired pool count == observed ready pool count
+#
+
+# --- Check all observed resources are Ready ---
+{{ $statusAllObservedReady := true }}
+{{ $statusUnreadyResources := list }}
+{{ range $name, $ready := $resourceReadiness }}
+  {{- if not $ready }}
+    {{- $statusAllObservedReady = false }}
+    {{- $statusUnreadyResources = append $statusUnreadyResources $name }}
+  {{- end }}
+{{ end }}
+
+# --- Count desired vs observed ready pools ---
+{{ $statusDesiredPoolCount := 0 }}
+{{ $statusDesiredPoolCount = add $statusDesiredPoolCount (len $ipv4Pools) }}
+{{ $statusDesiredPoolCount = add $statusDesiredPoolCount (len $ipv6ULAPools) }}
+{{ $statusDesiredPoolCount = add $statusDesiredPoolCount (len $ipv6GUAPools) }}
+
+{{ $statusReadyPoolCount := 0 }}
+{{ range $pool := $ipv4Pools }}
+  {{- $poolKey := printf "ipam-pool-%s" $pool.name }}
+  {{- if get $resourceReadiness $poolKey }}
+    {{- $statusReadyPoolCount = add $statusReadyPoolCount 1 }}
+  {{- end }}
+{{ end }}
+{{ range $pool := $ipv6ULAPools }}
+  {{- $poolKey := printf "ipam-pool-%s" $pool.name }}
+  {{- if get $resourceReadiness $poolKey }}
+    {{- $statusReadyPoolCount = add $statusReadyPoolCount 1 }}
+  {{- end }}
+{{ end }}
+{{ range $pool := $ipv6GUAPools }}
+  {{- $poolKey := printf "ipam-pool-%s" $pool.name }}
+  {{- if get $resourceReadiness $poolKey }}
+    {{- $statusReadyPoolCount = add $statusReadyPoolCount 1 }}
+  {{- end }}
+{{ end }}
+
+# --- Determine overall readiness ---
+{{ $statusAllPoolsReady := eq $statusDesiredPoolCount $statusReadyPoolCount }}
+{{ $statusIsReady := and $statusAllObservedReady $statusAllPoolsReady }}
+{{ $statusReadyReason := ternary "Available" "Creating" $statusIsReady }}
+
+# Build message - pools take priority, then unready resources
+{{ $statusPoolsMessage := printf "Waiting for pools - %d/%d ready" $statusReadyPoolCount $statusDesiredPoolCount }}
+{{ $statusResourcesMessage := printf "Waiting for resources - %s" (join ", " $statusUnreadyResources) }}
+{{ $statusPendingMessage := ternary $statusPoolsMessage $statusResourcesMessage (not $statusAllPoolsReady) }}
+{{ $statusReadyMessage := ternary "All resources are ready" $statusPendingMessage $statusIsReady }}
+
+# --- ClaimConditions for custom readiness signal ---
+---
+apiVersion: meta.gotemplating.fn.crossplane.io/v1alpha1
+kind: ClaimConditions
+conditions:
+  - type: PoolsReady
+    status: {{ ternary "True" "False" $statusIsReady | quote }}
+    reason: {{ $statusReadyReason }}
+    message: {{ $statusReadyMessage | quote }}
+    target: CompositeAndClaim
+
+# --- XR Status (without conditions - handled by ClaimConditions above) ---
+---
 apiVersion: aws.hops.ops.com.ai/v1alpha1
 kind: IPAM
 status:
