@@ -12,8 +12,10 @@ E2E_TESTS := $(wildcard tests/e2etest-*)
 # Format: example_path::observed_resources_path (observed_resources_path is optional)
 EXAMPLES := \
 	examples/ipams/minimal.yaml:: \
-	examples/ipams/multi-region.yaml::examples/test/mocks/observed-resources/multi-region/steps/1/ \
-	examples/ipams/dual-stack.yaml::examples/test/mocks/observed-resources/dual-stack/steps/3/ \
+	examples/ipams/standard.yaml::examples/test/mocks/observed-resources/standard/steps/1/ \
+	examples/ipams/standard.yaml::examples/test/mocks/observed-resources/standard/steps/2/ \
+	examples/ipams/standard.yaml::examples/test/mocks/observed-resources/standard/steps/3/ \
+	examples/ipams/standard.yaml::examples/test/mocks/observed-resources/standard/steps/4/ \
 	examples/ipams/management-policies.yaml::
 
 clean:

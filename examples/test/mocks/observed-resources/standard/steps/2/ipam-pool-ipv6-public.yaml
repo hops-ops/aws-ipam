@@ -1,0 +1,23 @@
+# Step 2: IPv6 public pool becomes Ready
+apiVersion: ec2.aws.m.upbound.io/v1beta1
+kind: VPCIpamPool
+metadata:
+  name: platform-ipv6-public
+  annotations:
+    crossplane.io/composition-resource-name: ipam-pool-ipv6-public
+    gotemplating.fn.crossplane.io/composition-resource-name: ipam-pool-ipv6-public
+status:
+  conditions:
+    - type: Ready
+      status: "True"
+    - type: Synced
+      status: "True"
+  atProvider:
+    id: ipam-pool-0333333333333333c
+    arn: arn:aws:ec2:us-east-1:123456789012:ipam-pool/ipam-pool-0333333333333333c
+    ipamScopeId: ipam-scope-0bbb444455556666b
+    ipamScopeType: public
+    addressFamily: ipv6
+    publicIpSource: amazon
+    awsService: ec2
+    state: create-complete

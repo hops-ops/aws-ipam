@@ -1,0 +1,14 @@
+# Step 3: CIDR usage becomes Ready
+apiVersion: protection.crossplane.io/v1beta1
+kind: Usage
+metadata:
+  name: of-ipam-pool-platform-ipv6-public-by-pool-cidr-platform-ipv6-public-cidr
+  annotations:
+    crossplane.io/composition-resource-name: ipam-pool-cidr-usage-ipv6-public
+    gotemplating.fn.crossplane.io/composition-resource-name: ipam-pool-cidr-usage-ipv6-public
+status:
+  conditions:
+    - type: Ready
+      status: "True"
+    - type: Synced
+      status: "True"

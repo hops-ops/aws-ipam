@@ -1,0 +1,21 @@
+# Step 2: IPv4 pool becomes Ready
+apiVersion: ec2.aws.m.upbound.io/v1beta1
+kind: VPCIpamPool
+metadata:
+  name: platform-ipv4
+  annotations:
+    crossplane.io/composition-resource-name: ipam-pool-ipv4
+    gotemplating.fn.crossplane.io/composition-resource-name: ipam-pool-ipv4
+status:
+  conditions:
+    - type: Ready
+      status: "True"
+    - type: Synced
+      status: "True"
+  atProvider:
+    id: ipam-pool-0111111111111111a
+    arn: arn:aws:ec2:us-east-1:123456789012:ipam-pool/ipam-pool-0111111111111111a
+    ipamScopeId: ipam-scope-0aaa111122223333a
+    ipamScopeType: private
+    addressFamily: ipv4
+    state: create-complete

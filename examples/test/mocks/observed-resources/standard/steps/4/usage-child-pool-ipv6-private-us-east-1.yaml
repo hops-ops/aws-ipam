@@ -1,0 +1,14 @@
+# Step 4: Child pool uses parent pool - Usage becomes Ready
+apiVersion: protection.crossplane.io/v1beta1
+kind: Usage
+metadata:
+  name: of-ipam-pool-platform-ipv6-private-by-child-pool-platform-ipv6-private-us-east-1
+  annotations:
+    crossplane.io/composition-resource-name: ipam-child-pool-usage-ipv6-private-us-east-1
+    gotemplating.fn.crossplane.io/composition-resource-name: ipam-child-pool-usage-ipv6-private-us-east-1
+status:
+  conditions:
+    - type: Ready
+      status: "True"
+    - type: Synced
+      status: "True"

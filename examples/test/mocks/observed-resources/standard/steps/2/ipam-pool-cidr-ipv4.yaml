@@ -1,0 +1,19 @@
+# Step 2: IPv4 pool CIDR becomes Ready
+apiVersion: ec2.aws.m.upbound.io/v1beta1
+kind: VPCIpamPoolCidr
+metadata:
+  name: platform-ipv4-cidr
+  annotations:
+    crossplane.io/composition-resource-name: ipam-pool-cidr-ipv4
+    gotemplating.fn.crossplane.io/composition-resource-name: ipam-pool-cidr-ipv4
+status:
+  conditions:
+    - type: Ready
+      status: "True"
+    - type: Synced
+      status: "True"
+  atProvider:
+    id: 10.0.0.0/8_ipam-pool-0111111111111111a
+    cidr: 10.0.0.0/8
+    ipamPoolId: ipam-pool-0111111111111111a
+    state: provisioned

@@ -1,0 +1,19 @@
+# Step 2: IPv6 private pool CIDR becomes Ready (AWS auto-assigns ULA)
+apiVersion: ec2.aws.m.upbound.io/v1beta1
+kind: VPCIpamPoolCidr
+metadata:
+  name: platform-ipv6-private-cidr
+  annotations:
+    crossplane.io/composition-resource-name: ipam-pool-cidr-ipv6-private
+    gotemplating.fn.crossplane.io/composition-resource-name: ipam-pool-cidr-ipv6-private
+status:
+  conditions:
+    - type: Ready
+      status: "True"
+    - type: Synced
+      status: "True"
+  atProvider:
+    id: fd00:ec2::/32_ipam-pool-0222222222222222b
+    cidr: fd00:ec2::/32
+    ipamPoolId: ipam-pool-0222222222222222b
+    state: provisioned

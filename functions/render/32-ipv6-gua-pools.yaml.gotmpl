@@ -1,0 +1,271 @@
+# code: language=yaml
+# yaml-language-server: $schema=../../.up/json/models/index.schema.json
+#
+# IPv6 GUA (Global Unicast Address) IPAM Pools
+# ============================================
+# This template renders VPCIpamPool, VPCIpamPoolCidr, and Usage resources for IPv6 GUA pools.
+#
+# GUA pools use Amazon-provided public IPv6 addresses for internet-routable workloads.
+# Set amazonProvidedIpv6CidrBlock: true to request AWS-assigned public IPv6 space.
+#
+
+{{- range $pool := $ipamPools }}
+
+  {{- $addressFamily := $pool.addressFamily | default "ipv4" }}
+  {{- $amazonProvided := $pool.amazonProvidedIpv6CidrBlock | default false }}
+
+  # Skip non-GUA pools (must be ipv6 AND amazon-provided)
+  {{- if not (and (eq $addressFamily "ipv6") $amazonProvided) }}
+    {{- continue }}
+  {{- end }}
+
+  # ============================================================================
+  # IPv6 GUA Pool: {{ $pool.name }}
+  # ============================================================================
+
+  {{- $poolName := $pool.name }}
+
+  # --- Pool Configuration ---
+  {{- $poolScope := $pool.scope | default "public" }}
+  {{- $sourcePoolRef := $pool.sourcePoolRef | default "" }}
+  {{- $publicIpSource := $pool.publicIpSource | default "amazon" }}
+  {{- $awsService := $pool.awsService | default "ec2" }}
+  {{- $poolExternalName := $pool.externalName | default "" }}
+  {{- $poolMgmtPolicies := $pool.managementPolicies | default $managementPolicies }}
+  {{- $poolForProvider := $pool.forProvider | default (dict) }}
+
+  # --- Pool Type Flags ---
+  {{- $isChildPool := ne $sourcePoolRef "" }}
+  {{- $isPublicPool := eq $poolScope "public" }}
+
+  # --- Parent Pool Data (for child pools only) ---
+  {{- $parentPoolId := "" }}
+  {{- $parentPoolScopeId := "" }}
+  {{- $parentPoolReady := false }}
+
+  {{- if $isChildPool }}
+    {{- $parentPoolData := get $observedPools $sourcePoolRef | default (dict) }}
+    {{- $parentPoolId = get $parentPoolData "id" | default "" }}
+    {{- $parentPoolScopeId = get $parentPoolData "ipamScopeId" | default "" }}
+    {{- $parentPoolKey := printf "ipam-pool-%s" $sourcePoolRef }}
+    {{- $parentPoolReady = get $resourceReadiness $parentPoolKey | default false }}
+  {{- end }}
+
+  # ===========================================================================
+  # Rendering Gate
+  # ===========================================================================
+  # GUA pools typically use public scope for internet-routable addresses
+  {{- $canRenderPool := true }}
+
+  {{- if $isChildPool }}
+    {{- if not (and $parentPoolReady $parentPoolId $parentPoolScopeId) }}
+      {{- $canRenderPool = false }}
+    {{- end }}
+  {{- else if $isPublicPool }}
+    # Public scope: needs IPAM's defaultPublicScopeId
+    {{- if not $observedDefaultPublicScopeId }}
+      {{- $canRenderPool = false }}
+    {{- end }}
+  {{- else }}
+    # Private scope (unusual for GUA but allowed): needs IPAM's defaultPrivateScopeId
+    {{- if not $observedDefaultPrivateScopeId }}
+      {{- $canRenderPool = false }}
+    {{- end }}
+  {{- end }}
+
+  # ===========================================================================
+  # Render Pool Resources
+  # ===========================================================================
+  {{- if and $poolName $canRenderPool }}
+
+    # --- Computed Values ---
+    {{- $poolRegion := $pool.region | default $pool.locale | default $region }}
+    {{- $poolLocale := $pool.locale | default $poolRegion }}
+    {{- $poolLabels := merge (dict "hops.ops.com.ai/ipam-pool" $poolName) ($pool.labels | default (dict)) }}
+    {{- $poolTags := merge $defaultAWSTags ($pool.tags | default (dict)) }}
+    {{- $poolResourceName := printf "%s-%s" $name $poolName }}
+    {{- $poolCidrResourceName := printf "%s-%s-cidr" $name $poolName }}
+    {{- $poolDescription := $pool.description | default (printf "%s pool for %s" $poolName $name) }}
+    {{- $allocationDefault := $pool.allocationDefaultNetmaskLength }}
+    {{- $allocationMin := $pool.allocationMinNetmaskLength }}
+    {{- $allocationMax := $pool.allocationMaxNetmaskLength }}
+
+    # --- Readiness for Usage resources ---
+    {{- $poolKey := printf "ipam-pool-%s" $poolName }}
+    {{- $poolReady := get $resourceReadiness $poolKey | default false }}
+    {{- $poolCidrKey := printf "ipam-pool-cidr-%s" $poolName }}
+    {{- $poolCidrReady := get $resourceReadiness $poolCidrKey | default false }}
+
+# -----------------------------------------------------------------------------
+# VPCIpamPool: {{ $poolResourceName }}
+# -----------------------------------------------------------------------------
+---
+apiVersion: ec2.aws.m.upbound.io/v1beta1
+kind: VPCIpamPool
+metadata:
+  name: {{ $poolResourceName }}
+  annotations:
+    {{ setResourceNameAnnotation (printf "ipam-pool-%s" $poolName) }}
+    {{- if $poolExternalName }}
+    crossplane.io/external-name: {{ $poolExternalName | quote }}
+    {{- end }}
+  labels:
+    {{- toYaml $poolLabels | nindent 4 }}
+spec:
+  managementPolicies: {{ toYaml $poolMgmtPolicies | nindent 4 }}
+  forProvider:
+    addressFamily: ipv6
+    description: {{ $poolDescription }}
+    {{- if $isChildPool }}
+    sourceIpamPoolId: {{ $parentPoolId }}
+    ipamScopeId: {{ $parentPoolScopeId }}
+    {{- else if $isPublicPool }}
+    # Public scope for GUA (internet-routable)
+    ipamScopeId: {{ $observedDefaultPublicScopeId }}
+    {{- else }}
+    ipamScopeId: {{ $observedDefaultPrivateScopeId }}
+    {{- end }}
+    locale: {{ $poolLocale }}
+    region: {{ $poolRegion }}
+    # GUA-specific fields
+    publicIpSource: {{ $publicIpSource }}
+    awsService: {{ $awsService }}
+    {{- if $allocationDefault }}
+    allocationDefaultNetmaskLength: {{ $allocationDefault }}
+    {{- end }}
+    {{- if $allocationMin }}
+    allocationMinNetmaskLength: {{ $allocationMin }}
+    {{- end }}
+    {{- if $allocationMax }}
+    allocationMaxNetmaskLength: {{ $allocationMax }}
+    {{- end }}
+    tags:
+      {{- toYaml $poolTags | nindent 6 }}
+    {{- with $poolForProvider }}
+    {{ toYaml . | nindent 4 }}
+    {{- end }}
+  providerConfigRef:
+    kind: {{ $providerConfigKind }}
+    name: {{ $providerConfigName }}
+
+    # -------------------------------------------------------------------------
+    # Usage: Child Pool uses Parent Pool
+    # -------------------------------------------------------------------------
+    {{- if and $poolReady $isChildPool }}
+      {{- $parentPoolResourceName := printf "%s-%s" $name $sourcePoolRef }}
+      {{- $parentPoolKey := printf "ipam-pool-%s" $sourcePoolRef }}
+      {{- $parentPoolReady := get $resourceReadiness $parentPoolKey | default false }}
+      {{- if $parentPoolReady }}
+
+---
+apiVersion: protection.crossplane.io/v1beta1
+kind: Usage
+metadata:
+  name: {{ printf "of-ipam-pool-%s-by-child-pool-%s" $parentPoolResourceName $poolResourceName }}
+  annotations:
+    {{ setResourceNameAnnotation (printf "ipam-child-pool-usage-%s" $poolName) }}
+spec:
+  replayDeletion: true
+  by:
+    apiVersion: ec2.aws.m.upbound.io/v1beta1
+    kind: VPCIpamPool
+    resourceRef:
+      name: {{ $poolResourceName }}
+  of:
+    apiVersion: ec2.aws.m.upbound.io/v1beta1
+    kind: VPCIpamPool
+    resourceRef:
+      name: {{ $parentPoolResourceName }}
+
+        # -----------------------------------------------------------------------
+        # Usage: Child Pool uses Parent Pool's CIDR
+        # -----------------------------------------------------------------------
+        {{- $parentPoolCidrResourceName := printf "%s-%s-cidr" $name $sourcePoolRef }}
+        {{- $parentPoolCidrKey := printf "ipam-pool-cidr-%s" $sourcePoolRef }}
+        {{- $parentPoolCidrReady := get $resourceReadiness $parentPoolCidrKey | default false }}
+        {{- if $parentPoolCidrReady }}
+
+---
+apiVersion: protection.crossplane.io/v1beta1
+kind: Usage
+metadata:
+  name: {{ printf "of-ipam-pool-cidr-%s-by-child-pool-%s" $parentPoolCidrResourceName $poolResourceName }}
+  annotations:
+    {{ setResourceNameAnnotation (printf "ipam-child-pool-cidr-usage-%s" $poolName) }}
+spec:
+  replayDeletion: true
+  by:
+    apiVersion: ec2.aws.m.upbound.io/v1beta1
+    kind: VPCIpamPool
+    resourceRef:
+      name: {{ $poolResourceName }}
+  of:
+    apiVersion: ec2.aws.m.upbound.io/v1beta1
+    kind: VPCIpamPoolCidr
+    resourceRef:
+      name: {{ $parentPoolCidrResourceName }}
+
+        {{- end }}
+      {{- end }}
+    {{- end }}
+
+    # -------------------------------------------------------------------------
+    # VPCIpamPoolCidr: {{ $poolCidrResourceName }}
+    # -------------------------------------------------------------------------
+    # For GUA pools, AWS provisions the CIDR automatically (no cidr/netmaskLength needed)
+    {{- $poolCidrExternalName := $pool.cidrExternalName | default "" }}
+    {{- if not $isChildPool }}
+
+---
+apiVersion: ec2.aws.m.upbound.io/v1beta1
+kind: VPCIpamPoolCidr
+metadata:
+  name: {{ $poolCidrResourceName }}
+  annotations:
+    {{ setResourceNameAnnotation (printf "ipam-pool-cidr-%s" $poolName) }}
+    {{- if $poolCidrExternalName }}
+    crossplane.io/external-name: {{ $poolCidrExternalName | quote }}
+    {{- end }}
+  labels:
+    {{- toYaml $poolLabels | nindent 4 }}
+spec:
+  managementPolicies: {{ toYaml $poolMgmtPolicies | nindent 4 }}
+  forProvider:
+    # For amazonProvidedIpv6CidrBlock, no cidr/netmaskLength - AWS provisions automatically
+    ipamPoolIdRef:
+      name: {{ $poolResourceName }}
+    region: {{ $poolRegion }}
+  providerConfigRef:
+    kind: {{ $providerConfigKind }}
+    name: {{ $providerConfigName }}
+
+      # -----------------------------------------------------------------------
+      # Usage: CIDR uses Pool
+      # -----------------------------------------------------------------------
+      {{- if and $poolReady $poolCidrReady }}
+
+---
+apiVersion: protection.crossplane.io/v1beta1
+kind: Usage
+metadata:
+  name: {{ printf "of-ipam-pool-%s-by-pool-cidr-%s" $poolResourceName $poolCidrResourceName }}
+  annotations:
+    {{ setResourceNameAnnotation (printf "ipam-pool-cidr-usage-%s" $poolName) }}
+spec:
+  replayDeletion: true
+  by:
+    apiVersion: ec2.aws.m.upbound.io/v1beta1
+    kind: VPCIpamPoolCidr
+    resourceRef:
+      name: {{ $poolCidrResourceName }}
+  of:
+    apiVersion: ec2.aws.m.upbound.io/v1beta1
+    kind: VPCIpamPool
+    resourceRef:
+      name: {{ $poolResourceName }}
+
+      {{- end }}
+    {{- end }}
+
+  {{- end }}
+{{- end }}

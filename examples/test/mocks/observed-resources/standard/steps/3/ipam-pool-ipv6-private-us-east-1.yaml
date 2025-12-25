@@ -1,0 +1,22 @@
+# Step 3: Regional IPv6 ULA child pool becomes Ready
+apiVersion: ec2.aws.m.upbound.io/v1beta1
+kind: VPCIpamPool
+metadata:
+  name: platform-ipv6-private-us-east-1
+  annotations:
+    crossplane.io/composition-resource-name: ipam-pool-ipv6-private-us-east-1
+    gotemplating.fn.crossplane.io/composition-resource-name: ipam-pool-ipv6-private-us-east-1
+status:
+  conditions:
+    - type: Ready
+      status: "True"
+    - type: Synced
+      status: "True"
+  atProvider:
+    id: ipam-pool-0555555555555555e
+    arn: arn:aws:ec2:us-east-1:123456789012:ipam-pool/ipam-pool-0555555555555555e
+    ipamScopeId: ipam-scope-0aaa111122223333a
+    ipamScopeType: private
+    addressFamily: ipv6
+    sourceIpamPoolId: ipam-pool-0222222222222222b
+    state: create-complete

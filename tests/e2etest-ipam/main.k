@@ -187,8 +187,7 @@ _items = [
                             },
 
                             # ==========================================================
-                            # GLOBAL IPv6 PRIVATE POOL - ULA /32
-                            # Largest ULA block AWS allows. Room for 65536 x /48 pools.
+                            # GLOBAL IPv6 PRIVATE POOL - ULA /48
                             # ==========================================================
                             {
                                 name: "ipv6-private"
@@ -246,10 +245,10 @@ _items = [
                             {
                                 name: _test_pool_ipv6_ula
                                 addressFamily: "ipv6"
-                                scope: "private"
+                                sourcePoolRef: "ipv6-private"
                                 region: _home_region
                                 locale: _home_region
-                                netmaskLength: 56  # Small ULA for testing
+                                netmaskLength: 56  # Allocated from parent's /48
                                 managementPolicies: ["*"]  # Full management - gets deleted
                                 allocationDefaultNetmaskLength: 60
                                 allocationMinNetmaskLength: 56

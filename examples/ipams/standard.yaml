@@ -1,0 +1,100 @@
+# Comprehensive IPAM example with dual-stack and regional pools
+# Tests all pool types:
+# - IPv4 global pool (implicit private scope)
+# - IPv6 private pool (explicit private scope, ULA)
+# - IPv6 public pool (Amazon-provided GUA)
+# - Regional child pool (sourcePoolRef)
+apiVersion: aws.hops.ops.com.ai/v1alpha1
+kind: IPAM
+metadata:
+  name: platform
+  namespace: default
+spec:
+  providerConfigRef:
+    name: default
+  region: us-east-1
+  operatingRegions:
+    - us-east-1
+    - us-west-2
+  pools:
+    # IPv4 global pool - top of hierarchy
+    - name: ipv4
+      addressFamily: ipv4
+      region: us-east-1
+      cidr: 10.0.0.0/8
+      allocationDefaultNetmaskLength: 12
+      allocationMinNetmaskLength: 10
+      allocationMaxNetmaskLength: 16
+      description: Global IPv4 pool
+      labels:
+        address-family: ipv4
+        pool-type: global
+
+    # Regional IPv4 pool for us-east-1 (child of global)
+    - name: ipv4-us-east-1
+      addressFamily: ipv4
+      sourcePoolRef: ipv4
+      region: us-east-1
+      locale: us-east-1
+      cidr: 10.0.0.0/12
+      allocationDefaultNetmaskLength: 16
+      allocationMinNetmaskLength: 16
+      allocationMaxNetmaskLength: 20
+      description: Regional IPv4 pool for us-east-1
+      labels:
+        address-family: ipv4
+        pool-type: regional
+        region: us-east-1
+
+    # IPv6 private pool (ULA)
+    # AWS auto-assigns from fd00::/8 range
+    - name: ipv6-private
+      addressFamily: ipv6
+      scope: private
+      region: us-east-1
+      locale: us-east-1
+      netmaskLength: 48
+      allocationDefaultNetmaskLength: 56
+      allocationMinNetmaskLength: 56
+      allocationMaxNetmaskLength: 56
+      description: Global IPv6 private pool (ULA)
+      labels:
+        address-family: ipv6
+        ipv6-type: ula
+        pool-type: global
+
+    # Regional IPv6 private pool for us-east-1 (child of global ULA)
+    - name: ipv6-private-us-east-1
+      addressFamily: ipv6
+      sourcePoolRef: ipv6-private
+      region: us-east-1
+      locale: us-east-1
+      netmaskLength: 56
+      allocationDefaultNetmaskLength: 64
+      allocationMinNetmaskLength: 64
+      allocationMaxNetmaskLength: 64
+      description: Regional IPv6 private pool for us-east-1
+      labels:
+        address-family: ipv6
+        ipv6-type: ula
+        pool-type: regional
+        region: us-east-1
+
+    # IPv6 public pool (Amazon-provided GUA)
+    - name: ipv6-public
+      addressFamily: ipv6
+      scope: public
+      region: us-east-1
+      locale: us-east-1
+      amazonProvidedIpv6CidrBlock: true
+      publicIpSource: amazon
+      awsService: ec2
+      netmaskLength: 52
+      allocationDefaultNetmaskLength: 56
+      allocationMinNetmaskLength: 52
+      allocationMaxNetmaskLength: 60
+      description: Global IPv6 public pool (Amazon GUA)
+      labels:
+        address-family: ipv6
+        ipv6-type: gua
+        pool-type: global
