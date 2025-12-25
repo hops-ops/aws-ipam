@@ -12,6 +12,7 @@ status:
   arn: {{ $observedIpamArn | default "" | quote }}
   defaultPrivateScopeId: {{ $observeddefaultPrivateScopeId | default "" | quote }}
   defaultPublicScopeId: {{ $observeddefaultPublicScopeId | default "" | quote }}
+{{ if $ipamHasPools }}
   pools:
 {{- range $pool := $ipamPools }}
     {{- $poolStatus := get $observedPools $pool.name | default (dict) }}
@@ -24,3 +25,4 @@ status:
       cidr: {{ $pool.cidr | quote }}
       {{- end }}
 {{- end }}
+{{ end }}

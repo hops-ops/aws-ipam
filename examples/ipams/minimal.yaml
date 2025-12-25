@@ -9,12 +9,3 @@ spec:
   region: us-west-2
   operatingRegions:
     - us-west-2
-  pools:
-    - name: platform-shared
-      cidr: 10.0.0.0/8
-      allocationDefaultNetmaskLength: 16
-      labels:
-        function: shared
-      tags:
-        owner: platform
-        environment: dev
