@@ -196,7 +196,7 @@ _items = [
                                 scope: "private"
                                 region: _home_region
                                 locale: _home_region
-                                netmaskLength: 32  # Largest ULA block AWS allows
+                                netmaskLength: 48  # Largest ULA block AWS allows
                                 managementPolicies: _persist
                                 # Allocations are /48 regional pools or /56 VPCs
                                 allocationDefaultNetmaskLength: 48
