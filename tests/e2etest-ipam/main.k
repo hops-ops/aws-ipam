@@ -199,8 +199,8 @@ _items = [
                                 netmaskLength: 48  # Largest ULA block AWS allows
                                 managementPolicies: _persist
                                 # Allocations are /48 regional pools or /56 VPCs
-                                allocationDefaultNetmaskLength: 48
-                                allocationMinNetmaskLength: 40
+                                allocationDefaultNetmaskLength: 56
+                                allocationMinNetmaskLength: 56
                                 allocationMaxNetmaskLength: 56
                                 description: "Global IPv6 private pool (ULA /32)"
                                 if _ipv6_private_pool_external_name:
