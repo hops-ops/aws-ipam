@@ -1,0 +1,99 @@
+# Comprehensive IPAM example with dual-stack and regional pools
+# Tests all pool types:
+# - IPv4 global pool (implicit private scope)
+# - IPv6 ULA pool (private scope, fd00::/8)
+# - IPv6 GUA pool (Amazon-provided public IPv6)
+# - Regional child pools (sourcePoolRef)
+apiVersion: aws.hops.ops.com.ai/v1alpha1
+kind: IPAM
+metadata:
+  name: platform
+  namespace: default
+spec:
+  providerConfigRef:
+    name: default
+  region: us-east-1
+  operatingRegions:
+    - us-east-1
+    - us-west-2
+  pools:
+    ipv4:
+      # IPv4 global pool - top of hierarchy
+      - name: ipv4
+        region: us-east-1
+        cidr: 10.0.0.0/8
+        allocations:
+          netmaskLength:
+            default: 12
+            min: 12
+            max: 12
+        description: Global IPv4 pool
+        labels:
+          pool-type: global
+
+      # Regional IPv4 pool for us-east-1 (child of global)
+      - name: ipv4-us-east-1
+        sourcePoolRef: ipv4
+        region: us-east-1
+        locale: us-east-1
+        cidr: 10.0.0.0/12
+        allocations:
+          netmaskLength:
+            default: 16
+            min: 16
+            max: 16
+        description: Regional IPv4 pool for us-east-1
+        labels:
+          pool-type: regional
+          region: us-east-1
+
+    ipv6:
+      ula:
+        # IPv6 private pool (ULA)
+        # AWS auto-assigns from fd00::/8 range
+        - name: ipv6-private
+          region: us-east-1
+          locale: us-east-1
+          netmaskLength: 48
+          allocations:
+            netmaskLength:
+              default: 56
+              min: 56
+              max: 56
+          description: Global IPv6 private pool (ULA)
+          labels:
+            ipv6-type: ula
+            pool-type: global
+
+        # Regional IPv6 private pool for us-east-1 (child of global ULA)
+        - name: ipv6-private-us-east-1
+          sourcePoolRef: ipv6-private
+          region: us-east-1
+          locale: us-east-1
+          netmaskLength: 56
+          allocations:
+            netmaskLength:
+              default: 64
+              min: 64
+              max: 64
+          description: Regional IPv6 private pool for us-east-1
+          labels:
+            ipv6-type: ula
+            pool-type: regional
+            region: us-east-1
+
+      gua:
+        # IPv6 public pool (Amazon-provided GUA)
+        - name: ipv6-public
+          region: us-east-1
+          locale: us-east-1
+          netmaskLength: 52
+          allocations:
+            netmaskLength:
+              default: 56
+              min: 52
+              max: 60
+          description: Global IPv6 public pool (Amazon GUA)
+          labels:
+            ipv6-type: gua
+            pool-type: global

@@ -24,7 +24,7 @@ This repository publishes the namespaced `IPAM` configuration package. Follow th
 
 - `spec.organizationName` feeds naming/tagging and defaults to `metadata.name` when omitted.
 - `spec.aws`: provider config + shared AWS defaults. `aws.config.tags` always merges with `{"hops":"true","organization":<name>}`.
-- `spec.ipam.homeRegion` plus `spec.ipam.pools[]` establish the IPAM instance, scope, and pool definitions. Each pool expects `name` + `cidrBlock` and optional region/locale, allocation guard rails, labels, and tags.
+- `spec.region` (required) plus `spec.pools[]` establish the IPAM instance, scope, and pool definitions. Each pool expects `name` + `cidr` and optional region/locale, allocation guard rails, labels, and tags.
 - `spec.managementPolicies` defaults to `["*"]` and propagates to every AWS resource.
 - Status projects observed IDs for the IPAM, scope, and pools so callers can debug quickly.
 

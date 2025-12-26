@@ -1,60 +1,86 @@
 # code: language=yaml
+#
+# Desired Values
+# ==============
+# Extract spec values from the XR and set up shared variables.
+# These are used by all subsequent template files.
+#
 
 {{ $xr := getCompositeResource . }}
 {{ $metadata := $xr.metadata | default (dict) }}
 {{ $spec := $xr.spec | default (dict) }}
 
-{{ $organizationName := $spec.organizationName | default ($metadata.name | default "ipam") }}
-{{ $managementMode := $spec.managementMode | default "self" }}
+# ==============================================================================
+# Core Configuration
+# ==============================================================================
+{{ $name := $metadata.name }}
 {{ $managementPolicies := $spec.managementPolicies | default (list "*") }}
 
+# ==============================================================================
+# IPAM Settings
+# ==============================================================================
 {{ $ipamExternalName := $spec.externalName | default "" }}
 {{ $ipamForProvider := $spec.forProvider | default (dict) }}
 
-{{ $scope := $spec.scope | default "private" }}
-{{ $isPrivateScope := eq $scope "private" }}
-{{ $isGlobalScope := eq $scope "global-organization" }}
-{{ $delegatedAdmin := $spec.delegatedAdminAccountRef | default (dict) }}
-{{ $delegatedAdminName := $delegatedAdmin.name | default "" }}
-{{ $providerConfigName := $spec.providerConfigName | default $delegatedAdminName | default "default" }}
-{{ $homeRegion := $spec.homeRegion | default "" }}
-{{ $requestedRegions := $spec.operatingRegions | default (list) }}
+# ==============================================================================
+# Provider Config
+# ==============================================================================
+{{ $providerConfigRef := $spec.providerConfigRef | default (dict) }}
+{{ $providerConfigKind := $providerConfigRef.kind | default "ProviderConfig" }}
+{{ $providerConfigName := $providerConfigRef.name | default "default" }}
 
-{{ if and (not $homeRegion) (gt (len $requestedRegions) 0) }}
-  {{- $homeRegion = index $requestedRegions 0 }}
-{{ end }}
-{{ if not $homeRegion }}
-  {{- $homeRegion = "us-east-1" }}
-{{ end }}
+# ==============================================================================
+# Region Configuration
+# ==============================================================================
+{{ $region := $spec.region }}
+{{ $operatingRegions := $spec.operatingRegions | default (list) }}
 
-{{ if not $requestedRegions }}
-  {{- $requestedRegions = list $homeRegion }}
-{{ end }}
+# ==============================================================================
+# Pools
+# ==============================================================================
+{{ $pools := $spec.pools | default (dict) }}
+{{ $ipv4Pools := $pools.ipv4 | default (list) }}
+{{ $ipv6 := $pools.ipv6 | default (dict) }}
+{{ $ipv6ULAPools := $ipv6.ula | default (list) }}
+{{ $ipv6GUAPools := $ipv6.gua | default (list) }}
 
-{{ $ipamPools := $spec.pools | default (list) }}
-{{ $ipamHasPools := gt (len $ipamPools) 0 }}
-
-# Custom scopes (optional - by default pools use IPAM's built-in default scopes)
+# ==============================================================================
+# Custom Scopes
+# ==============================================================================
+# Optional - by default pools use IPAM's built-in privateDefaultScope/publicDefaultScope.
+# Define custom scopes for isolation (e.g., per-team).
+#
 {{ $customScopes := $spec.scopes | default (list) }}
-{{ $hasCustomScopes := gt (len $customScopes) 0 }}
 
-# Build a map of custom scope names for quick lookup
+# Build a map for quick lookup: scopeName -> true
 {{ $customScopeNames := dict }}
 {{ range $customScopes }}
   {{- $_ := set $customScopeNames .name true }}
 {{ end }}
 
-{{ $defaultAWSTags := dict "hops" "true" "organization" $organizationName }}
+# ==============================================================================
+# Default Tags
+# ==============================================================================
+{{ $defaultAWSTags := dict "hops" "true" }}
 
+# ==============================================================================
+# Computed Region List
+# ==============================================================================
+# Collect all regions: base region + operatingRegions + pool-specific regions
+# IPAM needs to know all regions where it will allocate CIDRs
+#
 {{ $ipamRegionSet := dict }}
-{{ $_ := set $ipamRegionSet $homeRegion true }}
-{{ range $requestedRegions }}
+{{ $_ := set $ipamRegionSet $region true }}
+{{ range $operatingRegions }}
   {{- $_ = set $ipamRegionSet . true }}
 {{ end }}
-{{ range $ipamPools }}
-  {{- $poolRegion := .region | default .locale | default $homeRegion }}
-  {{- if $poolRegion }}
-    {{- $_ = set $ipamRegionSet $poolRegion true }}
-  {{- end }}
+{{ range $ipv4Pools }}
+  {{- $_ = set $ipamRegionSet (.region | default .locale | default $region) true }}
+{{ end }}
+{{ range $ipv6ULAPools }}
+  {{- $_ = set $ipamRegionSet (.region | default .locale | default $region) true }}
+{{ end }}
+{{ range $ipv6GUAPools }}
+  {{- $_ = set $ipamRegionSet (.region | default .locale | default $region) true }}
 {{ end }}
 {{ $ipamRegionList := sortAlpha (keys $ipamRegionSet) }}

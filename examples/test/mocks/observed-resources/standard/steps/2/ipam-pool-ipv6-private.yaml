@@ -1,0 +1,21 @@
+# Step 2: IPv6 private pool becomes Ready
+apiVersion: ec2.aws.m.upbound.io/v1beta1
+kind: VPCIpamPool
+metadata:
+  name: platform-ipv6-private
+  annotations:
+    crossplane.io/composition-resource-name: ipam-pool-ipv6-private
+    gotemplating.fn.crossplane.io/composition-resource-name: ipam-pool-ipv6-private
+status:
+  conditions:
+    - type: Ready
+      status: "True"
+    - type: Synced
+      status: "True"
+  atProvider:
+    id: ipam-pool-0222222222222222b
+    arn: arn:aws:ec2:us-east-1:123456789012:ipam-pool/ipam-pool-0222222222222222b
+    ipamScopeId: ipam-scope-0aaa111122223333a
+    ipamScopeType: private
+    addressFamily: ipv6
+    state: create-complete

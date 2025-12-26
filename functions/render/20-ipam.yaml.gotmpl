@@ -1,27 +1,33 @@
 # code: language=yaml
 # yaml-language-server: $schema=../../.up/json/models/index.schema.json
+#
+# IPAM Resource
+# =============
+# This template renders the VPCIpam resource.
+#
+# The IPAM is the core resource with built-in default scopes:
+# - privateDefaultScope: For private IP ranges (10.x, 172.x, 192.168.x, fd00::/8)
+# - publicDefaultScope: For public/BYOIP ranges and Amazon GUA IPv6
+#
 
-{{- if $ipamHasPools }}
-
-{{ $ipamReady := get $resourceReadiness "ipam" | default false }}
-
+# ==============================================================================
+# VPCIpam Resource
+# ==============================================================================
 ---
 apiVersion: ec2.aws.m.upbound.io/v1beta1
 kind: VPCIpam
 metadata:
-  name: {{ $organizationName }}
+  name: {{ $name }}
   annotations:
     {{ setResourceNameAnnotation "ipam" }}
     {{- if $ipamExternalName }}
     crossplane.io/external-name: {{ $ipamExternalName | quote }}
     {{- end }}
-  labels:
-    hops.ops.com.ai/organization: {{ $organizationName }}
 spec:
   managementPolicies: {{ toYaml $managementPolicies | nindent 4 }}
   forProvider:
-    description: {{ printf "%s IPAM" $organizationName }}
-    region: {{ $homeRegion }}
+    description: {{ printf "%s IPAM" $name }}
+    region: {{ $region }}
     operatingRegions:
       {{- range $ipamRegionList }}
       - regionName: {{ . }}
@@ -32,71 +38,5 @@ spec:
     {{ toYaml . | nindent 4 }}
     {{- end }}
   providerConfigRef:
-    kind: ProviderConfig
+    kind: {{ $providerConfigKind }}
     name: {{ $providerConfigName }}
-
-{{- /* Custom scopes - only created when explicitly defined in spec.scopes */}}
-{{- /* By default, pools use the IPAM's built-in privateDefaultScope and publicDefaultScope */}}
-
-{{- range $scope := $customScopes }}
-  {{- $scopeName := $scope.name }}
-  {{- $scopeExternalName := $scope.externalName | default "" }}
-  {{- $scopeDescription := $scope.description | default (printf "Custom scope %s for %s" $scopeName $organizationName) }}
-  {{- $scopeTags := merge $defaultAWSTags ($scope.tags | default (dict)) }}
-  {{- $scopeResourceName := printf "%s-scope-%s" $organizationName $scopeName }}
-  {{- $scopeKey := printf "custom-scope-%s" $scopeName }}
-  {{- $scopeReady := get $resourceReadiness $scopeKey | default false }}
-
----
-apiVersion: ec2.aws.m.upbound.io/v1beta1
-kind: VPCIpamScope
-metadata:
-  name: {{ $scopeResourceName }}
-  annotations:
-    {{ setResourceNameAnnotation (printf "custom-scope-%s" $scopeName) }}
-    {{- if $scopeExternalName }}
-    crossplane.io/external-name: {{ $scopeExternalName | quote }}
-    {{- end }}
-  labels:
-    hops.ops.com.ai/organization: {{ $organizationName }}
-    hops.ops.com.ai/ipam-scope: {{ $scopeName }}
-spec:
-  managementPolicies: {{ toYaml $managementPolicies | nindent 4 }}
-  forProvider:
-    description: {{ $scopeDescription }}
-    ipamIdRef:
-      name: {{ $organizationName }}
-    region: {{ $homeRegion }}
-    tags:
-      {{- toYaml $scopeTags | nindent 6 }}
-  providerConfigRef:
-    kind: ProviderConfig
-    name: {{ $providerConfigName }}
-
-  {{- /* Usage: custom scope uses IPAM */}}
-  {{- if and $ipamReady $scopeReady }}
-
----
-apiVersion: protection.crossplane.io/v1beta1
-kind: Usage
-metadata:
-  name: {{ printf "of-%s-by-%s" $organizationName $scopeResourceName }}
-  annotations:
-    {{ setResourceNameAnnotation (printf "custom-scope-usage-%s" $scopeName) }}
-spec:
-  replayDeletion: true
-  by:
-    apiVersion: ec2.aws.m.upbound.io/v1beta1
-    kind: VPCIpamScope
-    resourceRef:
-      name: {{ $scopeResourceName }}
-  of:
-    apiVersion: ec2.aws.m.upbound.io/v1beta1
-    kind: VPCIpam
-    resourceRef:
-      name: {{ $organizationName }}
-
-  {{- end }}
-{{- end }}
-
-{{- end }}

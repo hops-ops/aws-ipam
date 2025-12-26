@@ -1,0 +1,82 @@
+# code: language=yaml
+# yaml-language-server: $schema=../../.up/json/models/index.schema.json
+#
+# Custom Scopes
+# =============
+# This template renders optional VPCIpamScope resources for custom scopes.
+#
+# Custom scopes are only created when explicitly defined in spec.scopes.
+# They provide isolation for different use cases (e.g., you acquired another company that has a 10.0.0.0/8 range).
+#
+# Most use cases don't need custom scopes - the IPAM's default scopesa
+# are sufficient for typical IPAM pools.
+#
+
+{{ $ipamReady := get $resourceReadiness "ipam" | default false }}
+
+{{- range $scope := $customScopes }}
+
+  {{- $scopeName := $scope.name }}
+  {{- $scopeExternalName := $scope.externalName | default "" }}
+  {{- $scopeDescription := $scope.description | default (printf "Custom scope %s for %s" $scopeName $name) }}
+  {{- $scopeTags := merge $defaultAWSTags ($scope.tags | default (dict)) }}
+  {{- $scopeResourceName := printf "%s-scope-%s" $name $scopeName }}
+  {{- $scopeKey := printf "custom-scope-%s" $scopeName }}
+  {{- $scopeReady := get $resourceReadiness $scopeKey | default false }}
+
+# -----------------------------------------------------------------------------
+# VPCIpamScope: {{ $scopeResourceName }}
+# -----------------------------------------------------------------------------
+---
+apiVersion: ec2.aws.m.upbound.io/v1beta1
+kind: VPCIpamScope
+metadata:
+  name: {{ $scopeResourceName }}
+  annotations:
+    {{ setResourceNameAnnotation (printf "custom-scope-%s" $scopeName) }}
+    {{- if $scopeExternalName }}
+    crossplane.io/external-name: {{ $scopeExternalName | quote }}
+    {{- end }}
+  labels:
+    hops.ops.com.ai/ipam-scope: {{ $scopeName }}
+spec:
+  managementPolicies: {{ toYaml $managementPolicies | nindent 4 }}
+  forProvider:
+    description: {{ $scopeDescription }}
+    ipamIdRef:
+      name: {{ $name }}
+    region: {{ $region }}
+    tags:
+      {{- toYaml $scopeTags | nindent 6 }}
+  providerConfigRef:
+    kind: {{ $providerConfigKind }}
+    name: {{ $providerConfigName }}
+
+  # ---------------------------------------------------------------------------
+  # Usage: Custom scope uses IPAM
+  # ---------------------------------------------------------------------------
+  # Prevents the IPAM from being deleted while custom scopes exist.
+  {{- if and $ipamReady $scopeReady }}
+
+---
+apiVersion: protection.crossplane.io/v1beta1
+kind: Usage
+metadata:
+  name: {{ printf "of-%s-by-%s" $name $scopeResourceName }}
+  annotations:
+    {{ setResourceNameAnnotation (printf "custom-scope-usage-%s" $scopeName) }}
+spec:
+  replayDeletion: true
+  by:
+    apiVersion: ec2.aws.m.upbound.io/v1beta1
+    kind: VPCIpamScope
+    resourceRef:
+      name: {{ $scopeResourceName }}
+  of:
+    apiVersion: ec2.aws.m.upbound.io/v1beta1
+    kind: VPCIpam
+    resourceRef:
+      name: {{ $name }}
+
+  {{- end }}
+{{- end }}

@@ -1,0 +1,19 @@
+# Step 2: IPv6 public pool CIDR becomes Ready (Amazon-provided GUA)
+apiVersion: ec2.aws.m.upbound.io/v1beta1
+kind: VPCIpamPoolCidr
+metadata:
+  name: platform-ipv6-public-cidr
+  annotations:
+    crossplane.io/composition-resource-name: ipam-pool-cidr-ipv6-public
+    gotemplating.fn.crossplane.io/composition-resource-name: ipam-pool-cidr-ipv6-public
+status:
+  conditions:
+    - type: Ready
+      status: "True"
+    - type: Synced
+      status: "True"
+  atProvider:
+    id: 2600:1f00::/52_ipam-pool-0333333333333333c
+    cidr: 2600:1f00::/52
+    ipamPoolId: ipam-pool-0333333333333333c
+    state: provisioned

@@ -1,130 +1,86 @@
 # code: language=yaml
+#
+# Extract observed resource states and build readiness maps.
+# These values are used by downstream templates to gate resource creation.
+#
 
 {{ $observed := $.observed.resources | default (dict) }}
+
+# ==============================================================================
+# Resource Readiness Map
+# ==============================================================================
+# Build a lookup table: resourceName -> true/false
+# Use: get $resourceReadiness "ipam" returns true if IPAM is Ready
+#
 {{ $resourceReadiness := dict }}
 
 {{ range $name, $entry := $observed }}
-  {{- $resourceReady := false }}
   {{- $resource := $entry.resource | default (dict) }}
   {{- $status := $resource.status | default (dict) }}
   {{- $conditions := $status.conditions | default (list) }}
+
+  {{- $isReady := false }}
   {{- range $conditions }}
-    {{- $conditionType := default "" (get . "type") }}
-    {{- $conditionStatus := default "" (get . "status") }}
-    {{- if and (eq $conditionType "Ready") (eq $conditionStatus "True") }}
-      {{- $resourceReady = true }}
+    {{- if and (eq .type "Ready") (eq .status "True") }}
+      {{- $isReady = true }}
     {{- end }}
   {{- end }}
-  {{- $resourceReadiness = merge $resourceReadiness (dict $name $resourceReady) }}
+
+  {{- $_ := set $resourceReadiness $name $isReady }}
 {{ end }}
 
-{{ $ipamObservation := get $observed "ipam" }}
-{{ $observedIpamId := "" }}
-{{ $observedIpamArn := "" }}
-{{ $observedPublicDefaultScopeId := "" }}
-{{ $observedPrivateDefaultScopeId := "" }}
+# ==============================================================================
+# IPAM Observed Values
+# ==============================================================================
+# The IPAM must be observed before pools can reference its default scopes.
+# Pools using scope: private need $observedPrivateDefaultScopeId
+# Pools using scope: public need $observedPublicDefaultScopeId
+#
+{{ $ipamObs := get $observed "ipam" | default (dict) }}
+{{ $ipamResource := $ipamObs.resource | default (dict) }}
+{{ $ipamStatus := $ipamResource.status | default (dict) }}
+{{ $ipamAtProvider := $ipamStatus.atProvider | default (dict) }}
 
-{{ with $ipamObservation }}
-  {{- $resource := .resource | default (dict) }}
-  {{- $status := $resource.status | default (dict) }}
-  {{- $atProvider := $status.atProvider | default (dict) }}
-  {{- $id := $atProvider.id | default "" }}
-  {{- $arn := $atProvider.arn | default "" }}
-  {{- $publicDefaultScopeId := $atProvider.publicDefaultScopeId | default "" }}
-  {{- $privateDefaultScopeId := $atProvider.privateDefaultScopeId | default "" }}
-  {{- if $id }}
-    {{- $observedIpamId = $id }}
-  {{- end }}
-  {{- if $arn }}
-    {{- $observedIpamArn = $arn }}
-  {{- end }}
-  {{- if $publicDefaultScopeId }}
-    {{- $observedPublicDefaultScopeId = $publicDefaultScopeId }}
-  {{- end }}
-  {{- if $privateDefaultScopeId }}
-    {{- $observedPrivateDefaultScopeId = $privateDefaultScopeId }}
-  {{- end }}
-{{ end }}
+{{ $observedIpamId := $ipamAtProvider.id | default "" }}
+{{ $observedIpamArn := $ipamAtProvider.arn | default "" }}
+{{ $observedPublicDefaultScopeId := $ipamAtProvider.publicDefaultScopeId | default "" }}
+{{ $observedPrivateDefaultScopeId := $ipamAtProvider.privateDefaultScopeId | default "" }}
 
+# ==============================================================================
+# Pool Observed Values
+# ==============================================================================
+# Build a lookup table: poolName -> {id, arn, ipamScopeId}
+# Child pools need parent's id and ipamScopeId to be created.
+#
 {{ $observedPools := dict }}
-{{ range $pool := $ipamPools }}
+
+# IPv4 pools
+{{ range $pool := $ipv4Pools }}
   {{- $poolName := $pool.name }}
-  {{- if $poolName }}
-    {{- $poolKey := printf "ipam-pool-%s" $poolName }}
-    {{- $poolObservation := get $observed $poolKey }}
-    {{- $poolId := "" }}
-    {{- $poolArn := "" }}
-    {{- $poolScopeId := "" }}
-    {{- with $poolObservation }}
-      {{- $resource := .resource | default (dict) }}
-      {{- $status := $resource.status | default (dict) }}
-      {{- $atProvider := $status.atProvider | default (dict) }}
-      {{- $candidateId := $atProvider.id | default "" }}
-      {{- $candidateArn := $atProvider.arn | default "" }}
-      {{- $candidateScopeId := $atProvider.ipamScopeId | default "" }}
-      {{- if $candidateId }}
-        {{- $poolId = $candidateId }}
-      {{- end }}
-      {{- if $candidateArn }}
-        {{- $poolArn = $candidateArn }}
-      {{- end }}
-      {{- if $candidateScopeId }}
-        {{- $poolScopeId = $candidateScopeId }}
-      {{- end }}
-    {{- end }}
-    {{- $_ := set $observedPools $poolName (dict "id" $poolId "arn" $poolArn "ipamScopeId" $poolScopeId) }}
-  {{- end }}
+  {{- $poolKey := printf "ipam-pool-%s" $poolName }}
+  {{- $poolObs := get $observed $poolKey | default (dict) }}
+  {{- $poolAtProvider := (($poolObs.resource | default (dict)).status | default (dict)).atProvider | default (dict) }}
+  {{- $poolData := dict "id" ($poolAtProvider.id | default "") "arn" ($poolAtProvider.arn | default "") "ipamScopeId" ($poolAtProvider.ipamScopeId | default "") }}
+  {{- $_ := set $observedPools $poolName $poolData }}
 {{ end }}
 
-{{- /* Extract auto-generated subnet pool observations */}}
-{{ range $pool := $ipamPools }}
+# IPv6 ULA pools
+{{ range $pool := $ipv6ULAPools }}
   {{- $poolName := $pool.name }}
-  {{- $subnetPoolConfig := $pool.subnetPool | default (dict) }}
-  {{- $subnetPoolEnabled := $subnetPoolConfig.enabled | default false }}
-  {{- if and $poolName $subnetPoolEnabled }}
-    {{- $subnetPoolName := printf "%s-subnets" $poolName }}
-    {{- $subnetPoolKey := printf "ipam-pool-%s" $subnetPoolName }}
-    {{- $subnetPoolObservation := get $observed $subnetPoolKey }}
-    {{- $subnetPoolId := "" }}
-    {{- $subnetPoolArn := "" }}
-    {{- $subnetPoolScopeId := "" }}
-    {{- with $subnetPoolObservation }}
-      {{- $resource := .resource | default (dict) }}
-      {{- $status := $resource.status | default (dict) }}
-      {{- $atProvider := $status.atProvider | default (dict) }}
-      {{- $candidateId := $atProvider.id | default "" }}
-      {{- $candidateArn := $atProvider.arn | default "" }}
-      {{- $candidateScopeId := $atProvider.ipamScopeId | default "" }}
-      {{- if $candidateId }}
-        {{- $subnetPoolId = $candidateId }}
-      {{- end }}
-      {{- if $candidateArn }}
-        {{- $subnetPoolArn = $candidateArn }}
-      {{- end }}
-      {{- if $candidateScopeId }}
-        {{- $subnetPoolScopeId = $candidateScopeId }}
-      {{- end }}
-    {{- end }}
-    {{- $_ := set $observedPools $subnetPoolName (dict "id" $subnetPoolId "arn" $subnetPoolArn "ipamScopeId" $subnetPoolScopeId) }}
-  {{- end }}
+  {{- $poolKey := printf "ipam-pool-%s" $poolName }}
+  {{- $poolObs := get $observed $poolKey | default (dict) }}
+  {{- $poolAtProvider := (($poolObs.resource | default (dict)).status | default (dict)).atProvider | default (dict) }}
+  {{- $poolData := dict "id" ($poolAtProvider.id | default "") "arn" ($poolAtProvider.arn | default "") "ipamScopeId" ($poolAtProvider.ipamScopeId | default "") }}
+  {{- $_ := set $observedPools $poolName $poolData }}
 {{ end }}
 
-{{ $ramShares := dict }}
-{{ range $pool := $ipamPools }}
+# IPv6 GUA pools
+{{ range $pool := $ipv6GUAPools }}
   {{- $poolName := $pool.name }}
-  {{- if $poolName }}
-    {{- $shareKey := printf "ram-share-%s" $poolName }}
-    {{- $shareObservation := get $observed $shareKey }}
-    {{- $shareArn := "" }}
-    {{- with $shareObservation }}
-      {{- $resource := .resource | default (dict) }}
-      {{- $status := $resource.status | default (dict) }}
-      {{- $atProvider := $status.atProvider | default (dict) }}
-      {{- $candidateArn := $atProvider.arn | default "" }}
-      {{- if $candidateArn }}
-        {{- $shareArn = $candidateArn }}
-      {{- end }}
-    {{- end }}
-    {{- $_ := set $ramShares $poolName (dict "arn" $shareArn) }}
-  {{- end }}
+  {{- $poolKey := printf "ipam-pool-%s" $poolName }}
+  {{- $poolObs := get $observed $poolKey | default (dict) }}
+  {{- $poolAtProvider := (($poolObs.resource | default (dict)).status | default (dict)).atProvider | default (dict) }}
+  {{- $poolData := dict "id" ($poolAtProvider.id | default "") "arn" ($poolAtProvider.arn | default "") "ipamScopeId" ($poolAtProvider.ipamScopeId | default "") }}
+  {{- $_ := set $observedPools $poolName $poolData }}
 {{ end }}
+

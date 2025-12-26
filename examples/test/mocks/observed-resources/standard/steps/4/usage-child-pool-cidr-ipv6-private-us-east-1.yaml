@@ -1,0 +1,14 @@
+# Step 4: Child pool uses parent's CIDR - Usage becomes Ready
+apiVersion: protection.crossplane.io/v1beta1
+kind: Usage
+metadata:
+  name: of-ipam-pool-cidr-platform-ipv6-private-cidr-by-child-pool-platform-ipv6-private-us-east-1
+  annotations:
+    crossplane.io/composition-resource-name: ipam-child-pool-cidr-usage-ipv6-private-us-east-1
+    gotemplating.fn.crossplane.io/composition-resource-name: ipam-child-pool-cidr-usage-ipv6-private-us-east-1
+status:
+  conditions:
+    - type: Ready
+      status: "True"
+    - type: Synced
+      status: "True"

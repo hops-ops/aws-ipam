@@ -13,4 +13,4 @@ spec:
     step: render
   - functionRef:
       name: crossplane-contrib-function-auto-ready
-    step: crossplane-contrib-function-auto-ready
+    step: auto-ready

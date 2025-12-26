@@ -1,93 +1,58 @@
 # code: language=yaml
-
+#
+# Status Output
+# =============
+# Surface observed values to the XR status for users to read.
+# Ready condition is managed by function-auto-ready.
+#
+---
 apiVersion: aws.hops.ops.com.ai/v1alpha1
 kind: IPAM
 status:
-  organizationName: {{ $organizationName | quote }}
-  managementMode: {{ $managementMode | quote }}
-  scope: {{ $scope | quote }}
-  ipam:
-    name: {{ $organizationName | quote }}
-    region: {{ $homeRegion | quote }}
-    id: {{ $observedIpamId | default "" | quote }}
-    arn: {{ $observedIpamArn | default "" | quote }}
-    privateDefaultScopeId: {{ $observedPrivateDefaultScopeId | default "" | quote }}
-    publicDefaultScopeId: {{ $observedPublicDefaultScopeId | default "" | quote }}
-    pools:
-{{- range $pool := $ipamPools }}
-      {{- $poolName := $pool.name }}
-      {{- if $poolName }}
-        {{- $poolRegion := $pool.region | default $pool.locale | default $homeRegion }}
-        {{- $poolLocale := $pool.locale | default $poolRegion }}
-        {{- $poolStatus := get $observedPools $poolName | default (dict) }}
-        {{- $poolId := $poolStatus.id | default "" }}
-        {{- $poolArn := $poolStatus.arn | default "" }}
-        {{- $poolCidr := $pool.cidr | default $pool.cidrBlock }}
-      - name: {{ $poolName | quote }}
-        region: {{ $poolRegion | quote }}
-        locale: {{ $poolLocale | quote }}
-        id: {{ $poolId | default "" | quote }}
-        arn: {{ $poolArn | default "" | quote }}
-        {{- if $poolCidr }}
-        cidr: {{ $poolCidr | quote }}
+  id: {{ $observedIpamId | default "" | quote }}
+  arn: {{ $observedIpamArn | default "" | quote }}
+  privateDefaultScopeId: {{ $observedPrivateDefaultScopeId | default "" | quote }}
+  publicDefaultScopeId: {{ $observedPublicDefaultScopeId | default "" | quote }}
+  pools:
+    ipv4:
+{{- range $pool := $ipv4Pools }}
+      {{- $poolStatus := get $observedPools $pool.name | default (dict) }}
+      - name: {{ $pool.name | quote }}
+        id: {{ $poolStatus.id | default "" | quote }}
+        arn: {{ $poolStatus.arn | default "" | quote }}
+        {{- if $poolStatus.cidr }}
+        cidr: {{ $poolStatus.cidr | quote }}
+        {{- else if $pool.cidr }}
+        cidr: {{ $pool.cidr | quote }}
         {{- end }}
-        {{- if $pool.allocationDefaultNetmaskLength }}
-        allocationDefaultNetmaskLength: {{ $pool.allocationDefaultNetmaskLength }}
-        {{- else if $pool.allocationNetmaskLength }}
-        allocationDefaultNetmaskLength: {{ $pool.allocationNetmaskLength }}
-        {{- end }}
-        {{- if $pool.allocationMinNetmaskLength }}
-        allocationMinNetmaskLength: {{ $pool.allocationMinNetmaskLength }}
-        {{- end }}
-        {{- if $pool.allocationMaxNetmaskLength }}
-        allocationMaxNetmaskLength: {{ $pool.allocationMaxNetmaskLength }}
-        {{- end }}
-      {{- end }}
 {{- end }}
-{{- /* Include auto-generated subnet pools */}}
-{{- range $pool := $ipamPools }}
-  {{- $poolName := $pool.name }}
-  {{- $subnetPoolConfig := $pool.subnetPool | default (dict) }}
-  {{- $subnetPoolEnabled := $subnetPoolConfig.enabled | default false }}
-  {{- if and $poolName $subnetPoolEnabled }}
-    {{- $subnetPoolName := printf "%s-subnets" $poolName }}
-    {{- $poolRegion := $pool.region | default $pool.locale | default $homeRegion }}
-    {{- $poolLocale := $pool.locale | default $poolRegion }}
-    {{- $subnetPoolStatus := get $observedPools $subnetPoolName | default (dict) }}
-    {{- $subnetPoolId := $subnetPoolStatus.id | default "" }}
-    {{- $subnetPoolArn := $subnetPoolStatus.arn | default "" }}
-      - name: {{ $subnetPoolName | quote }}
-        region: {{ $poolRegion | quote }}
-        locale: {{ $poolLocale | quote }}
-        id: {{ $subnetPoolId | default "" | quote }}
-        arn: {{ $subnetPoolArn | default "" | quote }}
-        {{- if $subnetPoolConfig.allocationDefaultNetmaskLength }}
-        allocationDefaultNetmaskLength: {{ $subnetPoolConfig.allocationDefaultNetmaskLength }}
-        {{- end }}
-        {{- if $subnetPoolConfig.allocationMinNetmaskLength }}
-        allocationMinNetmaskLength: {{ $subnetPoolConfig.allocationMinNetmaskLength }}
-        {{- end }}
-        {{- if $subnetPoolConfig.allocationMaxNetmaskLength }}
-        allocationMaxNetmaskLength: {{ $subnetPoolConfig.allocationMaxNetmaskLength }}
-        {{- end }}
-  {{- end }}
+{{- if not $ipv4Pools }}
+      []
 {{- end }}
-{{- $ramShareEntries := list }}
-{{- range $pool := $ipamPools }}
-  {{- $poolName := $pool.name }}
-  {{- if $poolName }}
-    {{- $poolShareTargets := $pool.ramShareTargets | default (list) }}
-    {{- if gt (len $poolShareTargets) 0 }}
-      {{- $shareStatus := get $ramShares $poolName | default (dict) }}
-      {{- $entry := dict "poolName" $poolName "shareArn" ($shareStatus.arn | default "") }}
-      {{- $ramShareEntries = append $ramShareEntries $entry }}
-    {{- end }}
-  {{- end }}
+    ipv6:
+      ula:
+{{- range $pool := $ipv6ULAPools }}
+        {{- $poolStatus := get $observedPools $pool.name | default (dict) }}
+        - name: {{ $pool.name | quote }}
+          id: {{ $poolStatus.id | default "" | quote }}
+          arn: {{ $poolStatus.arn | default "" | quote }}
+          {{- if $poolStatus.cidr }}
+          cidr: {{ $poolStatus.cidr | quote }}
+          {{- end }}
 {{- end }}
-{{- if gt (len $ramShareEntries) 0 }}
-  ramShares:
-  {{- range $entry := $ramShareEntries }}
-  - poolName: {{ $entry.poolName | quote }}
-    shareArn: {{ $entry.shareArn | quote }}
-  {{- end }}
+{{- if not $ipv6ULAPools }}
+        []
+{{- end }}
+      gua:
+{{- range $pool := $ipv6GUAPools }}
+        {{- $poolStatus := get $observedPools $pool.name | default (dict) }}
+        - name: {{ $pool.name | quote }}
+          id: {{ $poolStatus.id | default "" | quote }}
+          arn: {{ $poolStatus.arn | default "" | quote }}
+          {{- if $poolStatus.cidr }}
+          cidr: {{ $poolStatus.cidr | quote }}
+          {{- end }}
+{{- end }}
+{{- if not $ipv6GUAPools }}
+        []
 {{- end }}

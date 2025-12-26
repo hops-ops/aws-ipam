@@ -23,15 +23,9 @@ spec:
             type: object
             description: Desired state for the IPAM resources.
             required:
+            - region
             - pools
             properties:
-              managementMode:
-                type: string
-                description: Controls whether Hops or the caller manages downstream consumers. Defaults to self.
-                enum:
-                - self
-                - managed
-                default: self
               managementPolicies:
                 type: array
                 description: Management operations permitted on composed resources. Use ["*"] for full management or omit Delete to orphan.
@@ -46,12 +40,23 @@ spec:
                   - LateInitialize
                 default:
                 - "*"
-              providerConfigName:
-                type: string
-                description: ProviderConfig used for AWS API operations. Defaults to the delegated admin account ref.
-              organizationName:
-                type: string
-                description: Logical name used for tagging and naming rendered resources. Defaults to metadata.name.
+              providerConfigRef:
+                type: object
+                description: Reference to the ProviderConfig for AWS API operations.
+                properties:
+                  kind:
+                    type: string
+                    description: Kind of the provider config (ProviderConfig or ClusterProviderConfig).
+                    enum:
+                      - ProviderConfig
+                      - ClusterProviderConfig
+                    default: ProviderConfig
+                  name:
+                    type: string
+                    description: Name of the provider config.
+                    default: default
+                required:
+                  - name
               externalName:
                 type: string
                 description: |
@@ -61,31 +66,12 @@ spec:
                 type: object
                 description: Override any forProvider field on the VPCIpam resource. Keys here overwrite template defaults.
                 x-kubernetes-preserve-unknown-fields: true
-              scope:
+              region:
                 type: string
-                description: |
-                  IPAM scope. Use "private" for single-account setups.
-                  Use "delegated-organization" or "global-organization" for multi-account with Organization.
-                enum:
-                - private
-                - delegated-organization
-                - global-organization
-                default: private
-              delegatedAdminAccountRef:
-                type: object
-                description: |
-                  Reference to the Account composite that granted IPAM delegated admin permissions.
-                  Required for delegated-organization and global-organization scopes.
-                properties:
-                  name:
-                    type: string
-                    description: Name of the Account composite resource.
-              homeRegion:
-                type: string
-                description: AWS region hosting the IPAM instance. Defaults to the first operatingRegion or us-east-1.
+                description: AWS region hosting the IPAM instance.
               operatingRegions:
                 type: array
-                description: AWS regions where the IPAM is allowed to allocate CIDRs. Defaults to the homeRegion.
+                description: Additional AWS regions where the IPAM can allocate CIDRs. Region is always included.
                 items:
                   type: string
               scopes:
@@ -115,167 +101,39 @@ spec:
                       description: Extra AWS tags merged with the default tag map.
                       x-kubernetes-preserve-unknown-fields: true
               pools:
-                type: array
-                description: Declarative list of IPAM pools and CIDR assignments.
-                minItems: 1
-                items:
-                  type: object
-                  required:
-                  - name
-                  x-kubernetes-preserve-unknown-fields: true
-                  properties:
-                    name:
-                      type: string
-                      description: Unique identifier for the pool used in downstream selectors.
-                    sourcePoolRef:
-                      type: string
-                      description: |
-                        Reference to a parent pool by name (within same IPAM).
-                        Creates a child pool that allocates from the parent's CIDR space.
-                        Use this for subnet pools that allocate from VPC pools.
-                    externalName:
-                      type: string
-                      description: |
-                        IPAM Pool ID to adopt (e.g., ipam-pool-0123456789abcdef0).
-                        When set, Crossplane imports the existing pool instead of creating a new one.
-                    managementPolicies:
-                      type: array
-                      description: |
-                        ManagementPolicies for this pool. Overrides spec.managementPolicies if set.
-                        Use to orphan specific pools on deletion while deleting others.
-                      items:
-                        type: string
-                        enum:
-                        - "*"
-                        - Create
-                        - Observe
-                        - Update
-                        - Delete
-                        - LateInitialize
-                    forProvider:
+                type: object
+                description: IPAM pools organized by address family and type.
+                required:
+                - ipv4
+                properties:
+                  ipv4:
+                    type: array
+                    description: IPv4 address pools.
+                    minItems: 1
+                    items:
                       type: object
-                      description: Override any forProvider field on the VPCIpamPool resource. Keys here overwrite template defaults.
+                      required:
+                      - name
                       x-kubernetes-preserve-unknown-fields: true
-                    cidr:
-                      type: string
-                      description: |
-                        Base CIDR for the pool. Conflicts with netmaskLength.
-                        For IPv6 ULA pools, use netmaskLength instead to let AWS auto-assign from fd00::/8.
-                    netmaskLength:
-                      type: integer
-                      minimum: 0
-                      maximum: 128
-                      description: |
-                        Netmask length for auto-assigned CIDR. Conflicts with cidr.
-                        Use this for IPv6 ULA pools where AWS assigns from fd00::/8 range.
-                    cidrExternalName:
-                      type: string
-                      description: |
-                        VPCIpamPoolCidr external name to adopt. Format: cidr_pool-id
-                        (e.g., 10.0.0.0/8_ipam-pool-0123456789abcdef0).
-                        When set, Crossplane imports the existing CIDR instead of creating a new one.
-                    amazonProvidedIpv6CidrBlock:
-                      type: boolean
-                      description: Request Amazon-provided IPv6 CIDR block (for public IPv6 pools).
-                    addressFamily:
-                      type: string
-                      description: Address family for this pool (ipv4 or ipv6). Defaults to ipv4.
-                      enum:
-                      - ipv4
-                      - ipv6
-                      default: ipv4
-                    publicIpSource:
-                      type: string
-                      description: Source of public IP addresses for IPv6 pools (amazon or byoip).
-                      enum:
-                      - amazon
-                      - byoip
-                    awsService:
-                      type: string
-                      description: AWS service for IPv6 allocation (ec2 for VPC/EC2).
-                    scope:
-                      type: string
-                      description: |
-                        Pool scope type (private or public). Defaults to private.
-                        - private: Uses IPAM's privateDefaultScope (or custom scope via scopeRef)
-                        - public: Uses IPAM's publicDefaultScope (required for awsService: ec2)
-                      enum:
-                      - private
-                      - public
-                    scopeRef:
-                      type: string
-                      description: |
-                        Reference to a custom scope defined in spec.scopes by name.
-                        When set, the pool uses this custom scope instead of the IPAM's default scope.
-                        Cannot be used with scope: public + awsService (public pools require AWS default scope).
-                    region:
-                      type: string
-                      description: AWS region that owns the pool. Defaults to aws.config.region.
-                    locale:
-                      type: string
-                      description: Locale owning the pool. Defaults to the pool region.
-                    description:
-                      type: string
-                      description: Optional description attached to the pool.
-                    allocationDefaultNetmaskLength:
-                      type: integer
-                      minimum: 0
-                      description: Default netmask length assigned to new allocations.
-                    allocationNetmaskLength:
-                      type: integer
-                      minimum: 0
-                      description: Shortcut for allocationDefaultNetmaskLength; kept for backwards compatibility.
-                    allocationMinNetmaskLength:
-                      type: integer
-                      minimum: 0
-                      description: Minimum netmask length allowed within the pool.
-                    allocationMaxNetmaskLength:
-                      type: integer
-                      minimum: 0
-                      description: Maximum netmask length allowed within the pool.
-                    labels:
-                      type: object
-                      description: Labels propagated to VpcIpamPool resources so other compositions can select pools.
-                      x-kubernetes-preserve-unknown-fields: true
-                    tags:
-                      type: object
-                      description: Extra AWS tags merged with the default tag map.
-                      x-kubernetes-preserve-unknown-fields: true
-                    ramShareTargets:
-                      type: array
-                      description: AWS principals that should receive RAM shares when scope=global-organization.
-                      items:
-                        type: object
-                        properties:
-                          account:
-                            type: string
-                            description: Twelve digit AWS account ID that should accept the RAM share.
-                          ou:
-                            type: string
-                            description: AWS Organizations OU identifier or path that should accept the RAM share.
-                        minProperties: 1
-                    subnetPool:
-                      type: object
-                      description: |
-                        Automatically create a child subnet pool for this VPC pool.
-                        Creates a pool named ${poolName}-subnets that allocates from this pool.
-                        Use this with aws-network's cidr.ipv4.ipam.subnetPool or cidr.ipv6.ipam.subnetPool feature.
-                        Inherits addressFamily from parent pool (supports both IPv4 and IPv6).
                       properties:
-                        enabled:
-                          type: boolean
-                          description: Enable automatic subnet pool creation.
-                          default: false
+                        name:
+                          type: string
+                          description: Unique identifier for the pool used in downstream selectors.
+                        sourcePoolRef:
+                          type: string
+                          description: |
+                            Reference to a parent pool by name (within same IPAM).
+                            Creates a child pool that allocates from the parent's CIDR space.
                         externalName:
                           type: string
                           description: |
-                            IPAM Pool ID to adopt for the subnet pool (e.g., ipam-pool-0123456789abcdef0).
-                            When set, Crossplane imports the existing subnet pool instead of creating a new one.
+                            IPAM Pool ID to adopt (e.g., ipam-pool-0123456789abcdef0).
+                            When set, Crossplane imports the existing pool instead of creating a new one.
                         managementPolicies:
                           type: array
                           description: |
-                            ManagementPolicies for this subnet pool. Overrides parent pool's managementPolicies if set.
-                            Use to orphan the subnet pool on deletion while deleting the parent.
+                            ManagementPolicies for this pool. Overrides spec.managementPolicies if set.
+                            Use to orphan specific pools on deletion while deleting others.
                           items:
                             type: string
                             enum:
@@ -285,72 +143,288 @@ spec:
                             - Update
                             - Delete
                             - LateInitialize
-                        allocationDefaultNetmaskLength:
+                        forProvider:
+                          type: object
+                          description: Override any forProvider field on the VPCIpamPool resource.
+                          x-kubernetes-preserve-unknown-fields: true
+                        cidr:
+                          type: string
+                          description: Base CIDR for the pool (e.g., 10.0.0.0/8).
+                        netmaskLength:
                           type: integer
-                          minimum: 0
-                          maximum: 128
+                          minimum: 8
+                          maximum: 32
+                          description: Netmask length for auto-assigned CIDR. Conflicts with cidr.
+                        cidrExternalName:
+                          type: string
                           description: |
-                            Default netmask length for subnet allocations.
-                            For IPv4: typically 24-28 (e.g., /24 subnets).
-                            For IPv6: typically 56-64 (e.g., /64 subnets).
-                        allocationMinNetmaskLength:
-                          type: integer
-                          minimum: 0
-                          maximum: 128
-                          description: |
-                            Minimum netmask length allowed for subnet allocations.
-                            For IPv4: typically 16-24. For IPv6: typically 48-56.
-                        allocationMaxNetmaskLength:
-                          type: integer
-                          minimum: 0
-                          maximum: 128
-                          description: |
-                            Maximum netmask length allowed for subnet allocations.
-                            For IPv4: typically 28. For IPv6: typically 64.
+                            VPCIpamPoolCidr external name to adopt. Format: cidr_pool-id
+                            (e.g., 10.0.0.0/8_ipam-pool-0123456789abcdef0).
+                        scopeRef:
+                          type: string
+                          description: Reference to a custom scope defined in spec.scopes by name.
+                        region:
+                          type: string
+                          description: AWS region that owns the pool. Defaults to spec.region.
+                        locale:
+                          type: string
+                          description: Locale owning the pool. Defaults to the pool region.
                         description:
                           type: string
-                          description: Optional description for the subnet pool.
+                          description: Optional description attached to the pool.
+                        allocations:
+                          type: object
+                          description: Allocation constraints for this pool.
+                          properties:
+                            netmaskLength:
+                              type: object
+                              description: Netmask length constraints for allocations from this pool.
+                              properties:
+                                default:
+                                  type: integer
+                                  minimum: 8
+                                  maximum: 32
+                                  description: Default netmask length assigned to new allocations.
+                                min:
+                                  type: integer
+                                  minimum: 8
+                                  maximum: 32
+                                  description: Minimum netmask length allowed within the pool.
+                                max:
+                                  type: integer
+                                  minimum: 8
+                                  maximum: 32
+                                  description: Maximum netmask length allowed within the pool.
+                        labels:
+                          type: object
+                          description: Labels propagated to VpcIpamPool resources.
+                          x-kubernetes-preserve-unknown-fields: true
                         tags:
                           type: object
-                          description: Extra AWS tags for the subnet pool.
+                          description: Extra AWS tags merged with the default tag map.
                           x-kubernetes-preserve-unknown-fields: true
+                  ipv6:
+                    type: object
+                    description: IPv6 address pools.
+                    properties:
+                      ula:
+                        type: array
+                        description: |
+                          IPv6 Unique Local Address (ULA) pools. These are private IPv6 addresses
+                          from the fd00::/8 range, auto-assigned by AWS based on netmaskLength.
+                          Always use the IPAM's private scope.
+                        items:
+                          type: object
+                          required:
+                          - name
+                          x-kubernetes-preserve-unknown-fields: true
+                          properties:
+                            name:
+                              type: string
+                              description: Unique identifier for the pool used in downstream selectors.
+                            sourcePoolRef:
+                              type: string
+                              description: Reference to a parent ULA pool by name (within same IPAM).
+                            externalName:
+                              type: string
+                              description: IPAM Pool ID to adopt (e.g., ipam-pool-0123456789abcdef0).
+                            managementPolicies:
+                              type: array
+                              description: ManagementPolicies for this pool. Overrides spec.managementPolicies if set.
+                              items:
+                                type: string
+                                enum:
+                                - "*"
+                                - Create
+                                - Observe
+                                - Update
+                                - Delete
+                                - LateInitialize
+                            forProvider:
+                              type: object
+                              description: Override any forProvider field on the VPCIpamPool resource.
+                              x-kubernetes-preserve-unknown-fields: true
+                            netmaskLength:
+                              type: integer
+                              minimum: 9
+                              maximum: 128
+                              description: Netmask length for AWS to auto-assign from fd00::/8 range.
+                            cidrExternalName:
+                              type: string
+                              description: VPCIpamPoolCidr external name to adopt.
+                            scopeRef:
+                              type: string
+                              description: |
+                                Reference to a custom private scope defined in spec.scopes by name.
+                                When not set, uses the IPAM's default private scope.
+                            region:
+                              type: string
+                              description: AWS region that owns the pool. Defaults to spec.region.
+                            locale:
+                              type: string
+                              description: Locale owning the pool. Defaults to the pool region.
+                            description:
+                              type: string
+                              description: Optional description attached to the pool.
+                            allocations:
+                              type: object
+                              description: Allocation constraints for this pool.
+                              properties:
+                                netmaskLength:
+                                  type: object
+                                  description: Netmask length constraints for allocations from this pool.
+                                  properties:
+                                    default:
+                                      type: integer
+                                      minimum: 9
+                                      maximum: 128
+                                      description: Default netmask length assigned to new allocations.
+                                    min:
+                                      type: integer
+                                      minimum: 9
+                                      maximum: 128
+                                      description: Minimum netmask length allowed within the pool.
+                                    max:
+                                      type: integer
+                                      minimum: 9
+                                      maximum: 128
+                                      description: Maximum netmask length allowed within the pool.
+                            labels:
+                              type: object
+                              description: Labels propagated to VpcIpamPool resources.
+                              x-kubernetes-preserve-unknown-fields: true
+                            tags:
+                              type: object
+                              description: Extra AWS tags merged with the default tag map.
+                              x-kubernetes-preserve-unknown-fields: true
+                      gua:
+                        type: array
+                        description: |
+                          IPv6 Global Unicast Address (GUA) pools. These are public IPv6 addresses
+                          provided by Amazon. Always use the IPAM's public scope with amazonProvidedIpv6CidrBlock.
+                        items:
+                          type: object
+                          required:
+                          - name
+                          x-kubernetes-preserve-unknown-fields: true
+                          properties:
+                            name:
+                              type: string
+                              description: Unique identifier for the pool used in downstream selectors.
+                            sourcePoolRef:
+                              type: string
+                              description: Reference to a parent GUA pool by name (within same IPAM).
+                            externalName:
+                              type: string
+                              description: IPAM Pool ID to adopt (e.g., ipam-pool-0123456789abcdef0).
+                            managementPolicies:
+                              type: array
+                              description: ManagementPolicies for this pool. Overrides spec.managementPolicies if set.
+                              items:
+                                type: string
+                                enum:
+                                - "*"
+                                - Create
+                                - Observe
+                                - Update
+                                - Delete
+                                - LateInitialize
+                            forProvider:
+                              type: object
+                              description: Override any forProvider field on the VPCIpamPool resource.
+                              x-kubernetes-preserve-unknown-fields: true
+                            netmaskLength:
+                              type: integer
+                              minimum: 40
+                              maximum: 52
+                              default: 52
+                              description: |
+                                Netmask length for the Amazon-provided IPv6 CIDR block.
+                                AWS limits this to /40-/52. Default /52 provides 16 VPC allocations.
+                            cidrExternalName:
+                              type: string
+                              description: VPCIpamPoolCidr external name to adopt.
+                            publicIpSource:
+                              type: string
+                              description: Source of public IP addresses. Defaults to amazon.
+                              enum:
+                              - amazon
+                              - byoip
+                              default: amazon
+                            awsService:
+                              type: string
+                              description: AWS service for IPv6 allocation. Defaults to ec2.
+                              default: ec2
+                            region:
+                              type: string
+                              description: AWS region that owns the pool. Defaults to spec.region.
+                            locale:
+                              type: string
+                              description: Locale owning the pool. Defaults to the pool region.
+                            description:
+                              type: string
+                              description: Optional description attached to the pool.
+                            allocations:
+                              type: object
+                              description: |
+                                Allocation constraints for VPCs from this pool.
+                                VPCs support /44 to /60 in increments of /4 (e.g., /44, /48, /52, /56, /60).
+                              properties:
+                                netmaskLength:
+                                  type: object
+                                  description: Netmask length constraints for VPC allocations.
+                                  properties:
+                                    default:
+                                      type: integer
+                                      minimum: 44
+                                      maximum: 60
+                                      default: 56
+                                      description: Default netmask for VPC allocations. Must be /44, /48, /52, /56, or /60.
+                                    min:
+                                      type: integer
+                                      minimum: 44
+                                      maximum: 60
+                                      description: Minimum netmask allowed. Must be /44, /48, /52, /56, or /60.
+                                    max:
+                                      type: integer
+                                      minimum: 44
+                                      maximum: 60
+                                      description: Maximum netmask allowed. Must be /44, /48, /52, /56, or /60.
+                            labels:
+                              type: object
+                              description: Labels propagated to VpcIpamPool resources.
+                              x-kubernetes-preserve-unknown-fields: true
+                            tags:
+                              type: object
+                              description: Extra AWS tags merged with the default tag map.
+                              x-kubernetes-preserve-unknown-fields: true
           status:
             type: object
-            description: Observed state of the rendered IPAM resources.
+            description: Observed state of the IPAM resources.
             properties:
-              organizationName:
+              id:
                 type: string
-              managementMode:
+                description: AWS IPAM ID.
+              arn:
                 type: string
-              scope:
+                description: AWS IPAM ARN.
+              privateDefaultScopeId:
                 type: string
-              ipam:
+                description: IPAM's built-in default private scope ID.
+              publicDefaultScopeId:
+                type: string
+                description: IPAM's built-in default public scope ID.
+              pools:
                 type: object
+                description: Observed state of IPAM pools.
                 properties:
-                  name:
-                    type: string
-                  region:
-                    type: string
-                  arn:
-                    type: string
-                  id:
-                    type: string
-                  privateDefaultScopeId:
-                    type: string
-                    description: IPAM's built-in default private scope ID.
-                  publicDefaultScopeId:
-                    type: string
-                    description: IPAM's built-in default public scope ID.
-                  pools:
+                  ipv4:
                     type: array
+                    description: Observed IPv4 pools.
                     items:
                       type: object
                       properties:
                         name:
-                          type: string
-                        region:
-                          type: string
-                        locale:
                           type: string
                         id:
                           type: string
@@ -358,20 +432,36 @@ spec:
                           type: string
                         cidr:
                           type: string
-                        allocationDefaultNetmaskLength:
-                          type: integer
-                        allocationMinNetmaskLength:
-                          type: integer
-                        allocationMaxNetmaskLength:
-                          type: integer
-              ramShares:
-                type: array
-                description: Observed RAM share metadata keyed by pool.
-                items:
-                  type: object
-                  properties:
-                    poolName:
-                      type: string
-                    shareArn:
-                      type: string
+                  ipv6:
+                    type: object
+                    description: Observed IPv6 pools.
+                    properties:
+                      ula:
+                        type: array
+                        description: Observed IPv6 ULA pools.
+                        items:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                            id:
+                              type: string
+                            arn:
+                              type: string
+                            cidr:
+                              type: string
+                      gua:
+                        type: array
+                        description: Observed IPv6 GUA pools.
+                        items:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                            id:
+                              type: string
+                            arn:
+                              type: string
+                            cidr:
+                              type: string
         
