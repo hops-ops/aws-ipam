@@ -16,6 +16,7 @@
 #       └── ipv4-us-east-2 (10.0.0.0/12) - regional, allocates /16 VPCs
 #   pools.ipv6.ula:
 #     ipv6-private (/48 ULA) - global
+#       └── ipv6-private-us-east-2 (/56) - regional, allocates /60-/64 VPCs
 #   pools.ipv6.gua:
 #     ipv6-public (/52 GUA) - global, Amazon-provided
 
@@ -71,6 +72,10 @@ _ipv6_public_cidr_external_name = "2600:1f26:47:c000::/52" + "_" + _ipv6_public_
 # Note: /48 is a reasonable ULA block size
 _ipv6_private_pool_external_name = "ipam-pool-0429371d308e6d6f3"
 _ipv6_private_cidr_external_name = "fda3:62c9:47e1::/48" + "_" + _ipv6_private_pool_external_name
+
+# Regional IPv6 private pool for us-east-2 (child of global ULA)
+# Update after first run with: aws ec2 describe-ipam-pools --query 'IpamPools[?contains(Description, `Regional IPv6`)].IpamPoolId'
+_ipv6_private_regional_useast2_external_name = ""
 
 _items = [
     metav1alpha1.E2ETest{
@@ -209,6 +214,36 @@ _items = [
                                         labels: {
                                             "pool-type": "global"
                                             "hops.ops.com.ai/global-pool": "ipv6-private"
+                                        }
+                                        tags: {
+                                            "hops.ops.com.ai/e2e": "true",
+                                            "hops.ops.com.ai/e2e-persistent": "true"
+                                        }
+                                    },
+
+                                    # Regional IPv6 private pool - us-east-2
+                                    # Child of global ipv6-private pool. NetworkAllocation uses this.
+                                    {
+                                        name: "ipv6-private-us-east-2"
+                                        sourcePoolRef: "ipv6-private"  # Child of global ULA pool
+                                        region: _home_region
+                                        locale: _home_region
+                                        netmaskLength: 56  # Allocated from parent's /48
+                                        managementPolicies: _persist
+                                        # Allocations from this pool are /60-/64 VPCs
+                                        allocations: {
+                                            netmaskLength: {
+                                                default: 64
+                                                min: 60
+                                                max: 64
+                                            }
+                                        }
+                                        description: "Regional IPv6 private pool for us-east-2"
+                                        if _ipv6_private_regional_useast2_external_name:
+                                            externalName: _ipv6_private_regional_useast2_external_name
+                                        labels: {
+                                            "pool-type": "regional"
+                                            "region": "us-east-2"
                                         }
                                         tags: {
                                             "hops.ops.com.ai/e2e": "true",
