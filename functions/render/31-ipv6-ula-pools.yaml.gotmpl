@@ -239,8 +239,9 @@ spec:
     # VPCIpamPoolCidr: {{ $poolCidrResourceName }}
     # -------------------------------------------------------------------------
     # ULA pools use netmaskLength - AWS auto-assigns from fd00::/8
+    # Child pools also need CIDR provisioned (allocated from parent pool)
     {{- $poolCidrExternalName := $pool.cidrExternalName | default "" }}
-    {{- $needsCidrResource := and $poolNetmaskLength (not $isChildPool) }}
+    {{- $needsCidrResource := $poolNetmaskLength }}
     {{- if $needsCidrResource }}
 
 ---
