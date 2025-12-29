@@ -237,8 +237,9 @@ spec:
     # -------------------------------------------------------------------------
     # VPCIpamPoolCidr: {{ $poolCidrResourceName }}
     # -------------------------------------------------------------------------
+    # Child pools also need CIDR provisioned (allocated from parent pool)
     {{- $poolCidrExternalName := $pool.cidrExternalName | default "" }}
-    {{- $needsCidrResource := and (or $poolCidr $poolNetmaskLength) (not $isChildPool) }}
+    {{- $needsCidrResource := or $poolCidr $poolNetmaskLength }}
     {{- if $needsCidrResource }}
 
 ---
