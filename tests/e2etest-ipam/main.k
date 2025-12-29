@@ -69,8 +69,8 @@ _ipv6_public_cidr_external_name = "2600:1f26:47:c000::/52" + "_" + _ipv6_public_
 
 # IPv6 private pool (ULA /48) - will be new pool
 # Note: /48 is a reasonable ULA block size
-_ipv6_private_pool_external_name = ""  # Update after first run
-_ipv6_private_cidr_external_name = ""  # Will be auto-assigned ULA /48
+_ipv6_private_pool_external_name = "ipam-pool-0429371d308e6d6f3"
+_ipv6_private_cidr_external_name = "fda3:62c9:47e1::/48" + "_" + _ipv6_private_pool_external_name
 
 _items = [
     metav1alpha1.E2ETest{
