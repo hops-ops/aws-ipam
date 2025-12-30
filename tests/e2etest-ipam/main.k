@@ -71,13 +71,13 @@ _ipv6_public_cidr_external_name = "2600:1f26:47:c000::/52" + "_" + _ipv6_public_
 
 # IPv6 private pool (ULA /32) - will be recreated with new size
 # Clear external names to recreate with correct hierarchy
-_ipv6_private_pool_external_name = ""
-_ipv6_private_cidr_external_name = ""
+_ipv6_private_pool_external_name = "ipam-pool-02261bfded584dbfb"
+_ipv6_private_cidr_external_name = "fda0:daf7::/32" + "_" + _ipv6_private_pool_external_name
 
 # Regional IPv6 private pool for us-east-2 (child of global ULA, /48)
 # Clear external names to recreate with correct hierarchy
-_ipv6_private_regional_useast2_external_name = ""
-_ipv6_private_regional_useast2_cidr_external_name = ""
+_ipv6_private_regional_useast2_external_name = "ipam-pool-0ca730678e463dbfc"
+_ipv6_private_regional_useast2_cidr_external_name = "fda0:daf7:1::/48" + "_" + _ipv6_private_regional_useast2_external_name
 
 _items = [
     metav1alpha1.E2ETest{
