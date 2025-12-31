@@ -5,18 +5,18 @@
 #
 # Architecture (per foundation-design/00-overview.md):
 # - IPAM creates: Global pools + Regional pools
-# - NetworkAllocation creates: VPC pool, Subnet pools, Allocations
+# - Network creates: VPC Pool allocations from regional pools, VPC, Subnet pools, Allocations
 #
 # After first run, update externalName fields with actual IDs to import.
 # These resources are used by aws-foundation and aws-network e2e tests.
 #
 # Pool hierarchy:
 #   pools.ipv4:
-#     ipv4 (10.0.0.0/8) - global
+#     ipv4 (10.0.0.0/8) - global, allocates /12 regional pools
 #       └── ipv4-us-east-2 (10.0.0.0/12) - regional, allocates /16 VPCs
 #   pools.ipv6.ula:
-#     ipv6-private (/48 ULA) - global
-#       └── ipv6-private-us-east-2 (/56) - regional, allocates /60-/64 VPCs
+#     ipv6-private (/32 ULA) - global, allocates /48 regional pools
+#       └── ipv6-private-us-east-2 (/48) - regional, allocates /56 VPCs
 #   pools.ipv6.gua:
 #     ipv6-public (/52 GUA) - global, Amazon-provided
 
@@ -69,15 +69,15 @@ _ipv4_regional_useast2_cidr_external_name = "10.0.0.0/12" + "_" + _ipv4_regional
 _ipv6_public_pool_external_name = "ipam-pool-06b3ec78deea8bcb9"
 _ipv6_public_cidr_external_name = "2600:1f26:47:c000::/52" + "_" + _ipv6_public_pool_external_name
 
-# IPv6 private pool (ULA /48) - will be new pool
-# Note: /48 is a reasonable ULA block size
-_ipv6_private_pool_external_name = "ipam-pool-0429371d308e6d6f3"
-_ipv6_private_cidr_external_name = "fda3:62c9:47e1::/48" + "_" + _ipv6_private_pool_external_name
+# IPv6 private pool (ULA /32) - will be recreated with new size
+# Clear external names to recreate with correct hierarchy
+_ipv6_private_pool_external_name = "ipam-pool-02261bfded584dbfb"
+_ipv6_private_cidr_external_name = "fda0:daf7::/32" + "_" + _ipv6_private_pool_external_name
 
-# Regional IPv6 private pool for us-east-2 (child of global ULA)
-# Update after first run with: aws ec2 describe-ipam-pools --query 'IpamPools[?contains(Description, `Regional IPv6`)].IpamPoolId'
-_ipv6_private_regional_useast2_external_name = "ipam-pool-0769c239ba0259975"
-_ipv6_private_regional_useast2_cidr_external_name = "fda3:62c9:47e1:0:0:0:0:0/56" + "_" + _ipv6_private_regional_useast2_external_name
+# Regional IPv6 private pool for us-east-2 (child of global ULA, /48)
+# Clear external names to recreate with correct hierarchy
+_ipv6_private_regional_useast2_external_name = "ipam-pool-0ca730678e463dbfc"
+_ipv6_private_regional_useast2_cidr_external_name = "fda0:daf7:1::/48" + "_" + _ipv6_private_regional_useast2_external_name
 
 _items = [
     metav1alpha1.E2ETest{
@@ -116,7 +116,7 @@ _items = [
                                             max: 12
                                         }
                                     }
-                                    description: "Global IPv4 pool"
+                                    description: "Global IPv4 pool (/8, allocates /12 regional pools)"
                                     if _ipv4_global_pool_external_name:
                                         externalName: _ipv4_global_pool_external_name
                                     if _ipv4_global_cidr_external_name:
@@ -148,7 +148,7 @@ _items = [
                                             max: 16
                                         }
                                     }
-                                    description: "Regional IPv4 pool for us-east-2"
+                                    description: "Regional IPv4 pool for us-east-2 (/12, allocates /16 VPCs)"
                                     if _ipv4_regional_useast2_external_name:
                                         externalName: _ipv4_regional_useast2_external_name
                                     if _ipv4_regional_useast2_cidr_external_name:
@@ -195,22 +195,23 @@ _items = [
                             ipv6: {
                                 # ULA pools (private, fd00::/8)
                                 ula: [
-                                    # Global IPv6 private pool - ULA /48
+                                    # Global IPv6 private pool - ULA /32
+                                    # Hierarchy: /32 global → /48 regional → /56 VPC → /64 subnet
                                     {
                                         name: "ipv6-private"
                                         region: _home_region
                                         locale: _home_region
-                                        netmaskLength: 48
+                                        netmaskLength: 32
                                         managementPolicies: _persist
-                                        # Allocations are /56 VPCs
+                                        # Allocations are /48 regional pools
                                         allocations: {
                                             netmaskLength: {
-                                                default: 56
-                                                min: 56
-                                                max: 56
+                                                default: 48
+                                                min: 48
+                                                max: 48
                                             }
                                         }
-                                        description: "Global IPv6 private pool (ULA /48)"
+                                        description: "Global IPv6 private pool (ULA /32, allocates /48 regional pools)"
                                         if _ipv6_private_pool_external_name:
                                             externalName: _ipv6_private_pool_external_name
                                         if _ipv6_private_cidr_external_name:
@@ -226,23 +227,23 @@ _items = [
                                     },
 
                                     # Regional IPv6 private pool - us-east-2
-                                    # Child of global ipv6-private pool. NetworkAllocation uses this.
+                                    # Child of global ipv6-private pool. 
                                     {
                                         name: "ipv6-private-us-east-2"
                                         sourcePoolRef: "ipv6-private"  # Child of global ULA pool
                                         region: _home_region
                                         locale: _home_region
-                                        netmaskLength: 56  # Allocated from parent's /48
+                                        netmaskLength: 48  # Allocated from parent's /32
                                         managementPolicies: _persist
-                                        # Allocations from this pool are /60-/64 VPCs
+                                        # Allocations from this pool are /56 VPCs (AWS requires /56 for VPC IPv6)
                                         allocations: {
                                             netmaskLength: {
-                                                default: 64
-                                                min: 60
-                                                max: 64
+                                                default: 56
+                                                min: 56
+                                                max: 56
                                             }
                                         }
-                                        description: "Regional IPv6 private pool for us-east-2"
+                                        description: "Regional IPv6 private pool for us-east-2 (/48, allocates /56 VPCs)"
                                         if _ipv6_private_regional_useast2_external_name:
                                             externalName: _ipv6_private_regional_useast2_external_name
                                         if _ipv6_private_regional_useast2_cidr_external_name:
@@ -263,13 +264,13 @@ _items = [
                                         sourcePoolRef: "ipv6-private"
                                         region: _home_region
                                         locale: _home_region
-                                        netmaskLength: 56  # Allocated from parent's /48
+                                        netmaskLength: 48  # Allocated from parent's /32
                                         managementPolicies: ["*"]  # Full management - gets deleted
                                         allocations: {
                                             netmaskLength: {
-                                                default: 60
+                                                default: 56
                                                 min: 56
-                                                max: 64
+                                                max: 56
                                             }
                                         }
                                         description: "Ephemeral IPv6 ULA test pool - " + _test_pool_ipv6_ula
