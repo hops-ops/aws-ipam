@@ -1,0 +1,38 @@
+# code: language=yaml
+#
+# IPAM Scopes State
+# =================
+# Computed state for custom scopes.
+#
+
+{{- $eff := $state.spec.effective }}
+{{- $obs := $state.observed }}
+
+# ==============================================================================
+# Build scopes slice
+# ==============================================================================
+{{- $scopes := list }}
+
+{{- range $scope := $eff.scopes }}
+  {{- $scopeName := $scope.name }}
+  {{- $scopeObs := get $obs.scopes $scopeName | default dict }}
+  {{- $scopeResourceName := printf "%s-scope-%s" $state.ipam.name $scopeName }}
+
+  {{- $scopeConfig := dict
+    "name" $scopeName
+    "resourceName" $scopeResourceName
+    "key" (printf "custom-scope-%s" $scopeName)
+    "externalName" ($scope.externalName | default "")
+    "description" ($scope.description | default (printf "Custom scope %s for %s" $scopeName $state.ipam.name))
+    "tags" (merge $state.ipam.defaultTags ($scope.tags | default dict))
+    "ready" ($scopeObs.ready | default false)
+    "render" true
+  }}
+
+  {{- $scopes = append $scopes $scopeConfig }}
+{{- end }}
+
+# ==============================================================================
+# Set ipam.scopes slice
+# ==============================================================================
+{{- $state = set $state "ipam" (merge $state.ipam (dict "scopes" $scopes)) }}

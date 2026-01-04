@@ -1,0 +1,29 @@
+# code: language=yaml
+#
+# Observed IPAM State
+# ===================
+# Extract observed state for the IPAM resource.
+#
+
+{{- $raw := $.observed.resources | default dict }}
+{{- $entry := get $raw "ipam" | default dict }}
+{{- $resource := $entry.resource | default dict }}
+{{- $status := $resource.status | default dict }}
+{{- $atProvider := $status.atProvider | default dict }}
+
+# Check readiness from conditions
+{{- $ready := false }}
+{{- range ($status.conditions | default list) }}
+  {{- if and (eq .type "Ready") (eq .status "True") }}
+    {{- $ready = true }}
+  {{- end }}
+{{- end }}
+
+# Set observed.ipam slice
+{{- $state = set $state "observed" (merge $state.observed (dict "ipam" (dict
+  "ready" $ready
+  "id" ($atProvider.id | default "")
+  "arn" ($atProvider.arn | default "")
+  "privateDefaultScopeId" ($atProvider.privateDefaultScopeId | default "")
+  "publicDefaultScopeId" ($atProvider.publicDefaultScopeId | default "")
+))) }}

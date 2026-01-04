@@ -1,0 +1,70 @@
+# code: language=yaml
+# yaml-language-server: $schema=../../.up/json/models/index.schema.json
+#
+# Custom Scopes
+# =============
+# Renders VPCIpamScope resources for custom scopes using $state.
+#
+
+{{- $ipam := $state.ipam }}
+{{- $obs := $state.observed }}
+
+{{- range $scope := $ipam.scopes }}
+{{- if $scope.render }}
+
+# -----------------------------------------------------------------------------
+# VPCIpamScope: {{ $scope.resourceName }}
+# -----------------------------------------------------------------------------
+---
+apiVersion: ec2.aws.m.upbound.io/v1beta1
+kind: VPCIpamScope
+metadata:
+  name: {{ $scope.resourceName }}
+  annotations:
+    {{ setResourceNameAnnotation $scope.key }}
+    {{- if $scope.externalName }}
+    crossplane.io/external-name: {{ $scope.externalName | quote }}
+    {{- end }}
+  labels:
+    hops.ops.com.ai/ipam-scope: {{ $scope.name }}
+spec:
+  managementPolicies: {{ toYaml $ipam.managementPolicies | nindent 4 }}
+  forProvider:
+    description: {{ $scope.description }}
+    ipamIdRef:
+      name: {{ $ipam.name }}
+    region: {{ $ipam.region }}
+    tags:
+      {{- toYaml $scope.tags | nindent 6 }}
+  providerConfigRef:
+    kind: {{ $ipam.providerConfig.kind }}
+    name: {{ $ipam.providerConfig.name }}
+
+  # ---------------------------------------------------------------------------
+  # Usage: Custom scope uses IPAM
+  # ---------------------------------------------------------------------------
+  {{- if and $obs.ipam.ready $scope.ready }}
+
+---
+apiVersion: protection.crossplane.io/v1beta1
+kind: Usage
+metadata:
+  name: {{ printf "of-%s-by-%s" $ipam.name $scope.resourceName }}
+  annotations:
+    {{ setResourceNameAnnotation (printf "custom-scope-usage-%s" $scope.name) }}
+spec:
+  replayDeletion: true
+  by:
+    apiVersion: ec2.aws.m.upbound.io/v1beta1
+    kind: VPCIpamScope
+    resourceRef:
+      name: {{ $scope.resourceName }}
+  of:
+    apiVersion: ec2.aws.m.upbound.io/v1beta1
+    kind: VPCIpam
+    resourceRef:
+      name: {{ $ipam.name }}
+
+  {{- end }}
+{{- end }}
+{{- end }}
