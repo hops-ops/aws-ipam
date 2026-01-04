@@ -1,0 +1,216 @@
+# code: language=yaml
+# yaml-language-server: $schema=../../.up/json/models/index.schema.json
+#
+# IPv6 ULA IPAM Pools
+# ===================
+# Renders VPCIpamPool, VPCIpamPoolCidr, and Usage resources for IPv6 ULA pools using $state.
+# ULA pools use private address space (fd00::/8) auto-assigned by AWS via netmaskLength.
+#
+
+{{- $ipam := $state.ipam }}
+{{- $obs := $state.observed }}
+
+{{- range $pool := $ipam.pools.ipv6.ula }}
+{{- if $pool.render }}
+
+# =============================================================================
+# IPv6 ULA Pool: {{ $pool.name }}
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# VPCIpamPool: {{ $pool.resourceName }}
+# -----------------------------------------------------------------------------
+---
+apiVersion: ec2.aws.m.upbound.io/v1beta1
+kind: VPCIpamPool
+metadata:
+  name: {{ $pool.resourceName }}
+  annotations:
+    {{ setResourceNameAnnotation $pool.key }}
+    {{- if $pool.externalName }}
+    crossplane.io/external-name: {{ $pool.externalName | quote }}
+    {{- end }}
+  labels:
+    {{- toYaml $pool.labels | nindent 4 }}
+spec:
+  managementPolicies: {{ toYaml $pool.managementPolicies | nindent 4 }}
+  forProvider:
+    addressFamily: {{ $pool.addressFamily }}
+    description: {{ $pool.description }}
+    {{- if $pool.isChildPool }}
+    sourceIpamPoolId: {{ $pool.parentId }}
+    ipamScopeId: {{ $pool.scopeId }}
+    {{- else if $pool.usesCustomScope }}
+    ipamScopeIdRef:
+      name: {{ $pool.scopeIdRef }}
+    {{- else }}
+    ipamScopeId: {{ $pool.scopeId }}
+    {{- end }}
+    {{- if $pool.locale }}
+    locale: {{ $pool.locale }}
+    {{- end }}
+    region: {{ $pool.region }}
+    {{- with ($pool.allocations.netmaskLength | default dict).default }}
+    allocationDefaultNetmaskLength: {{ . }}
+    {{- end }}
+    {{- with ($pool.allocations.netmaskLength | default dict).min }}
+    allocationMinNetmaskLength: {{ . }}
+    {{- end }}
+    {{- with ($pool.allocations.netmaskLength | default dict).max }}
+    allocationMaxNetmaskLength: {{ . }}
+    {{- end }}
+    tags:
+      {{- toYaml $pool.tags | nindent 6 }}
+    {{- with $pool.forProvider }}
+    {{ toYaml . | nindent 4 }}
+    {{- end }}
+  providerConfigRef:
+    kind: {{ $ipam.providerConfig.kind }}
+    name: {{ $ipam.providerConfig.name }}
+
+    # -------------------------------------------------------------------------
+    # Usage: Pool uses Custom Scope
+    # -------------------------------------------------------------------------
+    {{- if and $pool.ready $pool.usesCustomScope }}
+      {{- $scopeObs := get $obs.scopes $pool.scopeRef | default dict }}
+      {{- if $scopeObs.ready }}
+
+---
+apiVersion: protection.crossplane.io/v1beta1
+kind: Usage
+metadata:
+  name: {{ printf "of-scope-%s-by-pool-%s" $pool.scopeIdRef $pool.resourceName }}
+  annotations:
+    {{ setResourceNameAnnotation (printf "ipam-pool-scope-usage-%s" $pool.name) }}
+spec:
+  replayDeletion: true
+  by:
+    apiVersion: ec2.aws.m.upbound.io/v1beta1
+    kind: VPCIpamPool
+    resourceRef:
+      name: {{ $pool.resourceName }}
+  of:
+    apiVersion: ec2.aws.m.upbound.io/v1beta1
+    kind: VPCIpamScope
+    resourceRef:
+      name: {{ $pool.scopeIdRef }}
+
+      {{- end }}
+    {{- end }}
+
+    # -------------------------------------------------------------------------
+    # Usage: Child Pool uses Parent Pool
+    # -------------------------------------------------------------------------
+    {{- if and $pool.ready $pool.isChildPool }}
+      {{- $parentObs := get $obs.pools $pool.sourcePoolRef | default dict }}
+      {{- if $parentObs.ready }}
+        {{- $parentResourceName := printf "%s-%s" $ipam.name $pool.sourcePoolRef }}
+
+---
+apiVersion: protection.crossplane.io/v1beta1
+kind: Usage
+metadata:
+  name: {{ printf "of-ipam-pool-%s-by-child-pool-%s" $parentResourceName $pool.resourceName }}
+  annotations:
+    {{ setResourceNameAnnotation (printf "ipam-child-pool-usage-%s" $pool.name) }}
+spec:
+  replayDeletion: true
+  by:
+    apiVersion: ec2.aws.m.upbound.io/v1beta1
+    kind: VPCIpamPool
+    resourceRef:
+      name: {{ $pool.resourceName }}
+  of:
+    apiVersion: ec2.aws.m.upbound.io/v1beta1
+    kind: VPCIpamPool
+    resourceRef:
+      name: {{ $parentResourceName }}
+
+        # -----------------------------------------------------------------------
+        # Usage: Child Pool uses Parent Pool's CIDR
+        # -----------------------------------------------------------------------
+        {{- if ($parentObs.cidr | default dict).ready }}
+          {{- $parentCidrResourceName := printf "%s-%s-cidr" $ipam.name $pool.sourcePoolRef }}
+
+---
+apiVersion: protection.crossplane.io/v1beta1
+kind: Usage
+metadata:
+  name: {{ printf "of-ipam-pool-cidr-%s-by-child-pool-%s" $parentCidrResourceName $pool.resourceName }}
+  annotations:
+    {{ setResourceNameAnnotation (printf "ipam-child-pool-cidr-usage-%s" $pool.name) }}
+spec:
+  replayDeletion: true
+  by:
+    apiVersion: ec2.aws.m.upbound.io/v1beta1
+    kind: VPCIpamPool
+    resourceRef:
+      name: {{ $pool.resourceName }}
+  of:
+    apiVersion: ec2.aws.m.upbound.io/v1beta1
+    kind: VPCIpamPoolCidr
+    resourceRef:
+      name: {{ $parentCidrResourceName }}
+
+        {{- end }}
+      {{- end }}
+    {{- end }}
+
+    # -------------------------------------------------------------------------
+    # VPCIpamPoolCidr - ULA pools use netmaskLength
+    # -------------------------------------------------------------------------
+    {{- if $pool.netmaskLength }}
+
+---
+apiVersion: ec2.aws.m.upbound.io/v1beta1
+kind: VPCIpamPoolCidr
+metadata:
+  name: {{ $pool.cidrResourceName }}
+  annotations:
+    {{ setResourceNameAnnotation $pool.cidrKey }}
+    {{- if $pool.cidrExternalName }}
+    crossplane.io/external-name: {{ $pool.cidrExternalName | quote }}
+    {{- end }}
+  labels:
+    {{- toYaml $pool.labels | nindent 4 }}
+spec:
+  managementPolicies: {{ toYaml $pool.managementPolicies | nindent 4 }}
+  forProvider:
+    netmaskLength: {{ $pool.netmaskLength }}
+    ipamPoolIdRef:
+      name: {{ $pool.resourceName }}
+    region: {{ $pool.region }}
+  providerConfigRef:
+    kind: {{ $ipam.providerConfig.kind }}
+    name: {{ $ipam.providerConfig.name }}
+
+      # -----------------------------------------------------------------------
+      # Usage: CIDR uses Pool
+      # -----------------------------------------------------------------------
+      {{- if and $pool.ready $pool.cidrReady }}
+
+---
+apiVersion: protection.crossplane.io/v1beta1
+kind: Usage
+metadata:
+  name: {{ printf "of-ipam-pool-%s-by-pool-cidr-%s" $pool.resourceName $pool.cidrResourceName }}
+  annotations:
+    {{ setResourceNameAnnotation (printf "ipam-pool-cidr-usage-%s" $pool.name) }}
+spec:
+  replayDeletion: true
+  by:
+    apiVersion: ec2.aws.m.upbound.io/v1beta1
+    kind: VPCIpamPoolCidr
+    resourceRef:
+      name: {{ $pool.cidrResourceName }}
+  of:
+    apiVersion: ec2.aws.m.upbound.io/v1beta1
+    kind: VPCIpamPool
+    resourceRef:
+      name: {{ $pool.resourceName }}
+
+      {{- end }}
+    {{- end }}
+
+{{- end }}
+{{- end }}

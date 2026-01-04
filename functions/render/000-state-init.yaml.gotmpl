@@ -1,0 +1,94 @@
+# code: language=yaml
+#
+# State Initialization
+# ====================
+# Initialize $state with spec.raw and spec.effective (with defaults applied).
+# All subsequent templates use $state.spec.effective.
+#
+
+{{- $xr := getCompositeResource . }}
+{{- $metadata := $xr.metadata | default (dict) }}
+{{- $spec := $xr.spec | default (dict) }}
+
+# ==============================================================================
+# Build spec.effective with defaults
+# ==============================================================================
+{{- $providerConfigRef := $spec.providerConfigRef | default (dict) }}
+{{- $pools := $spec.pools | default (dict) }}
+{{- $ipv6 := $pools.ipv6 | default (dict) }}
+
+{{- $effectiveSpec := dict
+  "name" $metadata.name
+  "region" $spec.region
+  "operatingRegions" ($spec.operatingRegions | default list)
+  "managementPolicies" ($spec.managementPolicies | default (list "*"))
+  "externalName" ($spec.externalName | default "")
+  "forProvider" ($spec.forProvider | default dict)
+  "providerConfigRef" (dict
+    "name" ($providerConfigRef.name | default "default")
+    "kind" ($providerConfigRef.kind | default "ProviderConfig")
+  )
+  "scopes" ($spec.scopes | default list)
+  "pools" (dict
+    "ipv4" ($pools.ipv4 | default list)
+    "ipv6" (dict
+      "ula" ($ipv6.ula | default list)
+      "gua" ($ipv6.gua | default list)
+    )
+  )
+}}
+
+# ==============================================================================
+# Compute operating regions from all pool regions/locales
+# ==============================================================================
+{{- $regionSet := dict }}
+{{- $_ := set $regionSet $spec.region true }}
+{{- range ($spec.operatingRegions | default list) }}
+  {{- $_ = set $regionSet . true }}
+{{- end }}
+{{- range ($pools.ipv4 | default list) }}
+  {{- $_ = set $regionSet (.region | default $spec.region) true }}
+  {{- if .locale }}
+    {{- $_ = set $regionSet .locale true }}
+  {{- end }}
+{{- end }}
+{{- range ($ipv6.ula | default list) }}
+  {{- $_ = set $regionSet (.region | default $spec.region) true }}
+  {{- if .locale }}
+    {{- $_ = set $regionSet .locale true }}
+  {{- end }}
+{{- end }}
+{{- range ($ipv6.gua | default list) }}
+  {{- $_ = set $regionSet (.region | default $spec.region) true }}
+  {{- if .locale }}
+    {{- $_ = set $regionSet .locale true }}
+  {{- end }}
+{{- end }}
+{{- $effectiveSpec = set $effectiveSpec "computedRegions" (sortAlpha (keys $regionSet)) }}
+
+# ==============================================================================
+# Build custom scope name lookup
+# ==============================================================================
+{{- $scopeNames := dict }}
+{{- range ($spec.scopes | default list) }}
+  {{- $_ := set $scopeNames .name true }}
+{{- end }}
+{{- $effectiveSpec = set $effectiveSpec "scopeNames" $scopeNames }}
+
+# ==============================================================================
+# Default tags
+# ==============================================================================
+{{- $effectiveSpec = set $effectiveSpec "defaultTags" (dict "hops" "true") }}
+
+# ==============================================================================
+# Initialize $state
+# ==============================================================================
+{{- $state := dict
+  "spec" (dict
+    "raw" $spec
+    "effective" $effectiveSpec
+  )
+  "observed" (dict)
+  "ipam" (dict)
+  "status" (dict)
+}}

@@ -1,0 +1,120 @@
+# code: language=yaml
+#
+# Observed Pools State
+# ====================
+# Extract observed state for all IPAM pools and their CIDRs.
+#
+
+{{- $raw := $.observed.resources | default dict }}
+{{- $eff := $state.spec.effective }}
+
+# ==============================================================================
+# Build resource readiness map
+# ==============================================================================
+{{- $readiness := dict }}
+{{- range $name, $entry := $raw }}
+  {{- $resource := $entry.resource | default dict }}
+  {{- $status := $resource.status | default dict }}
+  {{- $conditions := $status.conditions | default list }}
+
+  {{- $isReady := false }}
+  {{- range $conditions }}
+    {{- if and (eq .type "Ready") (eq .status "True") }}
+      {{- $isReady = true }}
+    {{- end }}
+  {{- end }}
+
+  {{- $_ := set $readiness $name $isReady }}
+{{- end }}
+
+# ==============================================================================
+# Build pools observed state
+# ==============================================================================
+{{- $pools := dict }}
+
+# IPv4 pools
+{{- range $pool := $eff.pools.ipv4 }}
+  {{- $poolName := $pool.name }}
+  {{- $poolKey := printf "ipam-pool-%s" $poolName }}
+  {{- $poolObs := get $raw $poolKey | default dict }}
+  {{- $poolAtProvider := (($poolObs.resource | default dict).status | default dict).atProvider | default dict }}
+  {{- $cidrKey := printf "ipam-pool-cidr-%s" $poolName }}
+  {{- $cidrObs := get $raw $cidrKey | default dict }}
+  {{- $cidrAtProvider := (($cidrObs.resource | default dict).status | default dict).atProvider | default dict }}
+
+  {{- $_ := set $pools $poolName (dict
+    "ready" (get $readiness $poolKey | default false)
+    "id" ($poolAtProvider.id | default "")
+    "arn" ($poolAtProvider.arn | default "")
+    "ipamScopeId" ($poolAtProvider.ipamScopeId | default "")
+    "cidr" (dict
+      "ready" (get $readiness $cidrKey | default false)
+      "block" ($cidrAtProvider.cidr | default "")
+    )
+  ) }}
+{{- end }}
+
+# IPv6 ULA pools
+{{- range $pool := $eff.pools.ipv6.ula }}
+  {{- $poolName := $pool.name }}
+  {{- $poolKey := printf "ipam-pool-%s" $poolName }}
+  {{- $poolObs := get $raw $poolKey | default dict }}
+  {{- $poolAtProvider := (($poolObs.resource | default dict).status | default dict).atProvider | default dict }}
+  {{- $cidrKey := printf "ipam-pool-cidr-%s" $poolName }}
+  {{- $cidrObs := get $raw $cidrKey | default dict }}
+  {{- $cidrAtProvider := (($cidrObs.resource | default dict).status | default dict).atProvider | default dict }}
+
+  {{- $_ := set $pools $poolName (dict
+    "ready" (get $readiness $poolKey | default false)
+    "id" ($poolAtProvider.id | default "")
+    "arn" ($poolAtProvider.arn | default "")
+    "ipamScopeId" ($poolAtProvider.ipamScopeId | default "")
+    "cidr" (dict
+      "ready" (get $readiness $cidrKey | default false)
+      "block" ($cidrAtProvider.cidr | default "")
+    )
+  ) }}
+{{- end }}
+
+# IPv6 GUA pools
+{{- range $pool := $eff.pools.ipv6.gua }}
+  {{- $poolName := $pool.name }}
+  {{- $poolKey := printf "ipam-pool-%s" $poolName }}
+  {{- $poolObs := get $raw $poolKey | default dict }}
+  {{- $poolAtProvider := (($poolObs.resource | default dict).status | default dict).atProvider | default dict }}
+  {{- $cidrKey := printf "ipam-pool-cidr-%s" $poolName }}
+  {{- $cidrObs := get $raw $cidrKey | default dict }}
+  {{- $cidrAtProvider := (($cidrObs.resource | default dict).status | default dict).atProvider | default dict }}
+
+  {{- $_ := set $pools $poolName (dict
+    "ready" (get $readiness $poolKey | default false)
+    "id" ($poolAtProvider.id | default "")
+    "arn" ($poolAtProvider.arn | default "")
+    "ipamScopeId" ($poolAtProvider.ipamScopeId | default "")
+    "cidr" (dict
+      "ready" (get $readiness $cidrKey | default false)
+      "block" ($cidrAtProvider.cidr | default "")
+    )
+  ) }}
+{{- end }}
+
+# ==============================================================================
+# Build scopes observed state
+# ==============================================================================
+{{- $scopes := dict }}
+{{- range $scope := $eff.scopes }}
+  {{- $scopeName := $scope.name }}
+  {{- $scopeKey := printf "custom-scope-%s" $scopeName }}
+  {{- $_ := set $scopes $scopeName (dict
+    "ready" (get $readiness $scopeKey | default false)
+  ) }}
+{{- end }}
+
+# ==============================================================================
+# Set observed slices
+# ==============================================================================
+{{- $state = set $state "observed" (merge $state.observed (dict
+  "pools" $pools
+  "scopes" $scopes
+  "readiness" $readiness
+)) }}

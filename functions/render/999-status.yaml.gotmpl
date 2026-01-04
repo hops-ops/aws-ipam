@@ -1,0 +1,56 @@
+# code: language=yaml
+#
+# Status Output
+# =============
+# Output $state.status to the XR status.
+# Ready condition is managed by function-auto-ready.
+#
+
+{{- $s := $state.status }}
+
+---
+apiVersion: aws.hops.ops.com.ai/v1alpha1
+kind: IPAM
+status:
+  id: {{ $s.id | default "" | quote }}
+  arn: {{ $s.arn | default "" | quote }}
+  privateDefaultScopeId: {{ $s.privateDefaultScopeId | default "" | quote }}
+  publicDefaultScopeId: {{ $s.publicDefaultScopeId | default "" | quote }}
+  pools:
+    ipv4:
+{{- range $pool := $s.pools.ipv4 }}
+      - name: {{ $pool.name | quote }}
+        id: {{ $pool.id | default "" | quote }}
+        arn: {{ $pool.arn | default "" | quote }}
+        {{- if $pool.cidr }}
+        cidr: {{ $pool.cidr | quote }}
+        {{- end }}
+{{- end }}
+{{- if not $s.pools.ipv4 }}
+      []
+{{- end }}
+    ipv6:
+      ula:
+{{- range $pool := $s.pools.ipv6.ula }}
+        - name: {{ $pool.name | quote }}
+          id: {{ $pool.id | default "" | quote }}
+          arn: {{ $pool.arn | default "" | quote }}
+          {{- if $pool.cidr }}
+          cidr: {{ $pool.cidr | quote }}
+          {{- end }}
+{{- end }}
+{{- if not $s.pools.ipv6.ula }}
+        []
+{{- end }}
+      gua:
+{{- range $pool := $s.pools.ipv6.gua }}
+        - name: {{ $pool.name | quote }}
+          id: {{ $pool.id | default "" | quote }}
+          arn: {{ $pool.arn | default "" | quote }}
+          {{- if $pool.cidr }}
+          cidr: {{ $pool.cidr | quote }}
+          {{- end }}
+{{- end }}
+{{- if not $s.pools.ipv6.gua }}
+        []
+{{- end }}

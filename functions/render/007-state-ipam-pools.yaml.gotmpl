@@ -1,0 +1,277 @@
+# code: language=yaml
+#
+# IPAM Pools State
+# ================
+# Computed state for all pool types with render flags.
+#
+
+{{- $eff := $state.spec.effective }}
+{{- $obs := $state.observed }}
+
+# ==============================================================================
+# Build IPv4 pools
+# ==============================================================================
+{{- $ipv4Pools := list }}
+{{- range $pool := $eff.pools.ipv4 }}
+  {{- $poolName := $pool.name }}
+  {{- $poolObs := get $obs.pools $poolName | default dict }}
+  {{- $poolMgmtPolicies := $pool.managementPolicies | default $state.ipam.managementPolicies }}
+
+  # Pool references
+  {{- $sourcePoolRef := $pool.sourcePoolRef | default "" }}
+  {{- $scopeRef := $pool.scopeRef | default "" }}
+  {{- $isChildPool := ne $sourcePoolRef "" }}
+  {{- $usesCustomScope := and $scopeRef (hasKey $eff.scopeNames $scopeRef) }}
+
+  # Parent pool data (for child pools)
+  {{- $parentPoolObs := dict }}
+  {{- $parentReady := false }}
+  {{- $parentId := "" }}
+  {{- $parentScopeId := "" }}
+  {{- if $isChildPool }}
+    {{- $parentPoolObs = get $obs.pools $sourcePoolRef | default dict }}
+    {{- $parentReady = $parentPoolObs.ready | default false }}
+    {{- $parentId = $parentPoolObs.id | default "" }}
+    {{- $parentScopeId = $parentPoolObs.ipamScopeId | default "" }}
+  {{- end }}
+
+  # Determine render flag - IPv4 uses private scope
+  {{- $canRender := true }}
+  {{- if $isChildPool }}
+    {{- if not (and $parentReady $parentId $parentScopeId) }}
+      {{- $canRender = false }}
+    {{- end }}
+  {{- else if $usesCustomScope }}
+    # Custom scope uses ref, no gating needed
+  {{- else }}
+    {{- if not $obs.ipam.privateDefaultScopeId }}
+      {{- $canRender = false }}
+    {{- end }}
+  {{- end }}
+
+  # Determine scope ID or ref
+  {{- $scopeId := "" }}
+  {{- $scopeIdRef := "" }}
+  {{- if $isChildPool }}
+    {{- $scopeId = $parentScopeId }}
+  {{- else if $usesCustomScope }}
+    {{- $scopeIdRef = printf "%s-scope-%s" $state.ipam.name $scopeRef }}
+  {{- else }}
+    {{- $scopeId = $obs.ipam.privateDefaultScopeId }}
+  {{- end }}
+
+  # Build config
+  {{- $config := dict
+    "name" $poolName
+    "resourceName" (printf "%s-%s" $state.ipam.name $poolName)
+    "cidrResourceName" (printf "%s-%s-cidr" $state.ipam.name $poolName)
+    "key" (printf "ipam-pool-%s" $poolName)
+    "cidrKey" (printf "ipam-pool-cidr-%s" $poolName)
+    "addressFamily" "ipv4"
+    "region" ($pool.region | default $state.ipam.region)
+    "locale" ($pool.locale | default "")
+    "description" ($pool.description | default (printf "%s pool for %s" $poolName $state.ipam.name))
+    "managementPolicies" $poolMgmtPolicies
+    "labels" (merge (dict "hops.ops.com.ai/ipam-pool" $poolName) ($pool.labels | default dict))
+    "tags" (merge $state.ipam.defaultTags ($pool.tags | default dict))
+    "forProvider" ($pool.forProvider | default dict)
+    "externalName" ($pool.externalName | default "")
+    "cidrExternalName" ($pool.cidrExternalName | default "")
+    "cidr" ($pool.cidr | default "")
+    "netmaskLength" $pool.netmaskLength
+    "allocations" ($pool.allocations | default dict)
+    "isChildPool" $isChildPool
+    "usesCustomScope" $usesCustomScope
+    "sourcePoolRef" $sourcePoolRef
+    "scopeRef" $scopeRef
+    "scopeId" $scopeId
+    "scopeIdRef" $scopeIdRef
+    "parentId" $parentId
+    "ready" ($poolObs.ready | default false)
+    "cidrReady" (($poolObs.cidr | default dict).ready | default false)
+    "render" $canRender
+  }}
+
+  {{- $ipv4Pools = append $ipv4Pools $config }}
+{{- end }}
+
+# ==============================================================================
+# Build IPv6 ULA pools
+# ==============================================================================
+{{- $ipv6UlaPools := list }}
+{{- range $pool := $eff.pools.ipv6.ula }}
+  {{- $poolName := $pool.name }}
+  {{- $poolObs := get $obs.pools $poolName | default dict }}
+  {{- $poolMgmtPolicies := $pool.managementPolicies | default $state.ipam.managementPolicies }}
+
+  # Pool references
+  {{- $sourcePoolRef := $pool.sourcePoolRef | default "" }}
+  {{- $scopeRef := $pool.scopeRef | default "" }}
+  {{- $isChildPool := ne $sourcePoolRef "" }}
+  {{- $usesCustomScope := and $scopeRef (hasKey $eff.scopeNames $scopeRef) }}
+
+  # Parent pool data (for child pools)
+  {{- $parentPoolObs := dict }}
+  {{- $parentReady := false }}
+  {{- $parentId := "" }}
+  {{- $parentScopeId := "" }}
+  {{- if $isChildPool }}
+    {{- $parentPoolObs = get $obs.pools $sourcePoolRef | default dict }}
+    {{- $parentReady = $parentPoolObs.ready | default false }}
+    {{- $parentId = $parentPoolObs.id | default "" }}
+    {{- $parentScopeId = $parentPoolObs.ipamScopeId | default "" }}
+  {{- end }}
+
+  # Determine render flag - ULA uses private scope
+  {{- $canRender := true }}
+  {{- if $isChildPool }}
+    {{- if not (and $parentReady $parentId $parentScopeId) }}
+      {{- $canRender = false }}
+    {{- end }}
+  {{- else if $usesCustomScope }}
+    # Custom scope uses ref, no gating needed
+  {{- else }}
+    {{- if not $obs.ipam.privateDefaultScopeId }}
+      {{- $canRender = false }}
+    {{- end }}
+  {{- end }}
+
+  # Determine scope ID or ref
+  {{- $scopeId := "" }}
+  {{- $scopeIdRef := "" }}
+  {{- if $isChildPool }}
+    {{- $scopeId = $parentScopeId }}
+  {{- else if $usesCustomScope }}
+    {{- $scopeIdRef = printf "%s-scope-%s" $state.ipam.name $scopeRef }}
+  {{- else }}
+    {{- $scopeId = $obs.ipam.privateDefaultScopeId }}
+  {{- end }}
+
+  # Build config
+  {{- $config := dict
+    "name" $poolName
+    "resourceName" (printf "%s-%s" $state.ipam.name $poolName)
+    "cidrResourceName" (printf "%s-%s-cidr" $state.ipam.name $poolName)
+    "key" (printf "ipam-pool-%s" $poolName)
+    "cidrKey" (printf "ipam-pool-cidr-%s" $poolName)
+    "addressFamily" "ipv6"
+    "region" ($pool.region | default $state.ipam.region)
+    "locale" ($pool.locale | default "")
+    "description" ($pool.description | default (printf "%s pool for %s" $poolName $state.ipam.name))
+    "managementPolicies" $poolMgmtPolicies
+    "labels" (merge (dict "hops.ops.com.ai/ipam-pool" $poolName) ($pool.labels | default dict))
+    "tags" (merge $state.ipam.defaultTags ($pool.tags | default dict))
+    "forProvider" ($pool.forProvider | default dict)
+    "externalName" ($pool.externalName | default "")
+    "cidrExternalName" ($pool.cidrExternalName | default "")
+    "cidr" ($pool.cidr | default "")
+    "netmaskLength" $pool.netmaskLength
+    "allocations" ($pool.allocations | default dict)
+    "isChildPool" $isChildPool
+    "usesCustomScope" $usesCustomScope
+    "sourcePoolRef" $sourcePoolRef
+    "scopeRef" $scopeRef
+    "scopeId" $scopeId
+    "scopeIdRef" $scopeIdRef
+    "parentId" $parentId
+    "ready" ($poolObs.ready | default false)
+    "cidrReady" (($poolObs.cidr | default dict).ready | default false)
+    "render" $canRender
+  }}
+
+  {{- $ipv6UlaPools = append $ipv6UlaPools $config }}
+{{- end }}
+
+# ==============================================================================
+# Build IPv6 GUA pools
+# ==============================================================================
+{{- $ipv6GuaPools := list }}
+{{- range $pool := $eff.pools.ipv6.gua }}
+  {{- $poolName := $pool.name }}
+  {{- $poolObs := get $obs.pools $poolName | default dict }}
+  {{- $poolMgmtPolicies := $pool.managementPolicies | default $state.ipam.managementPolicies }}
+
+  # Pool references
+  {{- $sourcePoolRef := $pool.sourcePoolRef | default "" }}
+  {{- $isChildPool := ne $sourcePoolRef "" }}
+
+  # Parent pool data (for child pools)
+  {{- $parentPoolObs := dict }}
+  {{- $parentReady := false }}
+  {{- $parentId := "" }}
+  {{- $parentScopeId := "" }}
+  {{- if $isChildPool }}
+    {{- $parentPoolObs = get $obs.pools $sourcePoolRef | default dict }}
+    {{- $parentReady = $parentPoolObs.ready | default false }}
+    {{- $parentId = $parentPoolObs.id | default "" }}
+    {{- $parentScopeId = $parentPoolObs.ipamScopeId | default "" }}
+  {{- end }}
+
+  # Determine render flag - GUA uses public scope
+  {{- $canRender := true }}
+  {{- if $isChildPool }}
+    {{- if not (and $parentReady $parentId $parentScopeId) }}
+      {{- $canRender = false }}
+    {{- end }}
+  {{- else }}
+    {{- if not $obs.ipam.publicDefaultScopeId }}
+      {{- $canRender = false }}
+    {{- end }}
+  {{- end }}
+
+  # Determine scope ID
+  {{- $scopeId := "" }}
+  {{- if $isChildPool }}
+    {{- $scopeId = $parentScopeId }}
+  {{- else }}
+    {{- $scopeId = $obs.ipam.publicDefaultScopeId }}
+  {{- end }}
+
+  # Build config
+  {{- $config := dict
+    "name" $poolName
+    "resourceName" (printf "%s-%s" $state.ipam.name $poolName)
+    "cidrResourceName" (printf "%s-%s-cidr" $state.ipam.name $poolName)
+    "key" (printf "ipam-pool-%s" $poolName)
+    "cidrKey" (printf "ipam-pool-cidr-%s" $poolName)
+    "addressFamily" "ipv6"
+    "region" ($pool.region | default $state.ipam.region)
+    "locale" ($pool.locale | default "")
+    "description" ($pool.description | default (printf "%s pool for %s" $poolName $state.ipam.name))
+    "managementPolicies" $poolMgmtPolicies
+    "labels" (merge (dict "hops.ops.com.ai/ipam-pool" $poolName) ($pool.labels | default dict))
+    "tags" (merge $state.ipam.defaultTags ($pool.tags | default dict))
+    "forProvider" ($pool.forProvider | default dict)
+    "externalName" ($pool.externalName | default "")
+    "cidrExternalName" ($pool.cidrExternalName | default "")
+    "cidr" ($pool.cidr | default "")
+    "netmaskLength" $pool.netmaskLength
+    "allocations" ($pool.allocations | default dict)
+    "isChildPool" $isChildPool
+    "usesCustomScope" false
+    "sourcePoolRef" $sourcePoolRef
+    "scopeRef" ""
+    "scopeId" $scopeId
+    "scopeIdRef" ""
+    "parentId" $parentId
+    "ready" ($poolObs.ready | default false)
+    "cidrReady" (($poolObs.cidr | default dict).ready | default false)
+    "render" $canRender
+    "publicIpSource" ($pool.publicIpSource | default "amazon")
+    "awsService" ($pool.awsService | default "ec2")
+  }}
+
+  {{- $ipv6GuaPools = append $ipv6GuaPools $config }}
+{{- end }}
+
+# ==============================================================================
+# Set ipam.pools slice
+# ==============================================================================
+{{- $pools := dict
+  "ipv4" $ipv4Pools
+  "ipv6" (dict
+    "ula" $ipv6UlaPools
+    "gua" $ipv6GuaPools
+  )
+}}
+{{- $state = set $state "ipam" (merge $state.ipam (dict "pools" $pools)) }}

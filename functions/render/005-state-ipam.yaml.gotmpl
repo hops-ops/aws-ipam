@@ -1,0 +1,24 @@
+# code: language=yaml
+#
+# Core IPAM State
+# ===============
+# Computed state shared by all resources.
+#
+
+{{- $eff := $state.spec.effective }}
+
+# ==============================================================================
+# Core ipam state - shared by all resources
+# ==============================================================================
+{{- $ipam := dict
+  "name" $eff.name
+  "region" $eff.region
+  "computedRegions" $eff.computedRegions
+  "managementPolicies" $eff.managementPolicies
+  "providerConfig" $eff.providerConfigRef
+  "defaultTags" $eff.defaultTags
+  "externalName" $eff.externalName
+  "forProvider" $eff.forProvider
+}}
+
+{{- $state = set $state "ipam" $ipam }}

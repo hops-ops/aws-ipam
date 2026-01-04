@@ -1,0 +1,72 @@
+# code: language=yaml
+#
+# Status State
+# ============
+# Compute all status values for XRD output.
+#
+
+{{- $obs := $state.observed }}
+{{- $ipam := $state.ipam }}
+
+# ==============================================================================
+# Build IPv4 pool status
+# ==============================================================================
+{{- $ipv4Status := list }}
+{{- range $pool := $ipam.pools.ipv4 }}
+  {{- $poolObs := get $obs.pools $pool.name | default dict }}
+  {{- $cidr := $pool.cidr }}
+  {{- if not $cidr }}
+    {{- $cidr = ($poolObs.cidr | default dict).block | default "" }}
+  {{- end }}
+  {{- $ipv4Status = append $ipv4Status (dict
+    "name" $pool.name
+    "id" ($poolObs.id | default "")
+    "arn" ($poolObs.arn | default "")
+    "cidr" $cidr
+  ) }}
+{{- end }}
+
+# ==============================================================================
+# Build IPv6 ULA pool status
+# ==============================================================================
+{{- $ipv6UlaStatus := list }}
+{{- range $pool := $ipam.pools.ipv6.ula }}
+  {{- $poolObs := get $obs.pools $pool.name | default dict }}
+  {{- $ipv6UlaStatus = append $ipv6UlaStatus (dict
+    "name" $pool.name
+    "id" ($poolObs.id | default "")
+    "arn" ($poolObs.arn | default "")
+    "cidr" (($poolObs.cidr | default dict).block | default "")
+  ) }}
+{{- end }}
+
+# ==============================================================================
+# Build IPv6 GUA pool status
+# ==============================================================================
+{{- $ipv6GuaStatus := list }}
+{{- range $pool := $ipam.pools.ipv6.gua }}
+  {{- $poolObs := get $obs.pools $pool.name | default dict }}
+  {{- $ipv6GuaStatus = append $ipv6GuaStatus (dict
+    "name" $pool.name
+    "id" ($poolObs.id | default "")
+    "arn" ($poolObs.arn | default "")
+    "cidr" (($poolObs.cidr | default dict).block | default "")
+  ) }}
+{{- end }}
+
+# ==============================================================================
+# Set $state.status
+# ==============================================================================
+{{- $state = set $state "status" (dict
+  "id" ($obs.ipam.id | default "")
+  "arn" ($obs.ipam.arn | default "")
+  "privateDefaultScopeId" ($obs.ipam.privateDefaultScopeId | default "")
+  "publicDefaultScopeId" ($obs.ipam.publicDefaultScopeId | default "")
+  "pools" (dict
+    "ipv4" $ipv4Status
+    "ipv6" (dict
+      "ula" $ipv6UlaStatus
+      "gua" $ipv6GuaStatus
+    )
+  )
+) }}

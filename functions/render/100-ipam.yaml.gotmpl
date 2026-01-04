@@ -1,0 +1,40 @@
+# code: language=yaml
+# yaml-language-server: $schema=../../.up/json/models/index.schema.json
+#
+# IPAM Resource
+# =============
+# Renders the VPCIpam resource using $state.
+#
+
+{{- $ipam := $state.ipam }}
+
+# ==============================================================================
+# VPCIpam Resource
+# ==============================================================================
+---
+apiVersion: ec2.aws.m.upbound.io/v1beta1
+kind: VPCIpam
+metadata:
+  name: {{ $ipam.name }}
+  annotations:
+    {{ setResourceNameAnnotation "ipam" }}
+    {{- if $ipam.externalName }}
+    crossplane.io/external-name: {{ $ipam.externalName | quote }}
+    {{- end }}
+spec:
+  managementPolicies: {{ toYaml $ipam.managementPolicies | nindent 4 }}
+  forProvider:
+    description: {{ printf "%s IPAM" $ipam.name }}
+    region: {{ $ipam.region }}
+    operatingRegions:
+      {{- range $ipam.computedRegions }}
+      - regionName: {{ . }}
+      {{- end }}
+    tags:
+      {{- toYaml $ipam.defaultTags | nindent 6 }}
+    {{- with $ipam.forProvider }}
+    {{ toYaml . | nindent 4 }}
+    {{- end }}
+  providerConfigRef:
+    kind: {{ $ipam.providerConfig.kind }}
+    name: {{ $ipam.providerConfig.name }}
