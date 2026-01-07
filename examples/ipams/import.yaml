@@ -1,0 +1,82 @@
+# Import existing IPAM resources into Crossplane management.
+# managementPolicies excludes "Delete" to prevent accidental deletion.
+#
+# This example demonstrates how to adopt existing AWS IPAM resources
+# without risk of accidental deletion. The imports object provides
+# external names for each resource to import.
+#
+# After first run, get resource IDs with:
+#   aws ec2 describe-ipams --query 'Ipams[*].[IpamId,Tags]'
+#   aws ec2 describe-ipam-pools --query 'IpamPools[*].[IpamPoolId,Description]'
+#   aws ec2 describe-ipam-pool-cidrs --ipam-pool-id <pool-id>
+#
+apiVersion: aws.hops.ops.com.ai/v1alpha1
+kind: IPAM
+metadata:
+  name: imported-ipam
+  namespace: default
+spec:
+  region: us-east-1
+
+  # Exclude Delete to safely import without risk of accidental deletion
+  managementPolicies:
+    - Create
+    - Observe
+    - Update
+    - LateInitialize
+
+  # External names of existing AWS resources to import.
+  # All external names are collected in one flat imports object.
+  imports:
+    # IPAM ID (e.g., ipam-0123456789abcdef0)
+    ipam: ipam-0123456789abcdef0
+
+    # Pool IDs keyed by pool name
+    pools:
+      ipv4: ipam-pool-0aaa111222333444a
+      ipv4-us-east-1: ipam-pool-0bbb111222333444b
+      ipv6-private: ipam-pool-0ccc111222333444c
+
+    # Pool CIDR external names keyed by pool name
+    # Format: cidr_pool-id (e.g., 10.0.0.0/8_ipam-pool-xxx)
+    poolCidrs:
+      ipv4: 10.0.0.0/8_ipam-pool-0aaa111222333444a
+      ipv4-us-east-1: 10.0.0.0/12_ipam-pool-0bbb111222333444b
+      ipv6-private: fda0:daf7::/32_ipam-pool-0ccc111222333444c
+
+  # Pool definitions - these must match existing resources
+  pools:
+    ipv4:
+      # Global IPv4 pool
+      - name: ipv4
+        cidr: 10.0.0.0/8
+        allocations:
+          netmaskLength:
+            default: 12
+            min: 12
+            max: 12
+        description: Global IPv4 pool
+
+      # Regional IPv4 pool for us-east-1
+      - name: ipv4-us-east-1
+        sourcePoolRef: ipv4
+        locale: us-east-1
+        cidr: 10.0.0.0/12
+        allocations:
+          netmaskLength:
+            default: 16
+            min: 16
+            max: 16
+        description: Regional IPv4 pool for us-east-1
+
+    ipv6:
+      ula:
+        # IPv6 private pool (ULA)
+        - name: ipv6-private
+          netmaskLength: 32
+          allocations:
+            netmaskLength:
+              default: 48
+              min: 48
+              max: 48
+          description: Global IPv6 private pool (ULA)

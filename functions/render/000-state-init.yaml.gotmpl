@@ -24,13 +24,19 @@
 {{- $providerConfigRef := $spec.providerConfigRef | default (dict) }}
 {{- $pools := $spec.pools | default (dict) }}
 {{- $ipv6 := $pools.ipv6 | default (dict) }}
+{{- $imports := $spec.imports | default (dict) }}
 
 {{- $effectiveSpec := dict
   "name" $metadata.name
   "region" $spec.region
   "operatingRegions" ($spec.operatingRegions | default list)
   "managementPolicies" ($spec.managementPolicies | default (list "*"))
-  "externalName" ($spec.externalName | default "")
+  "imports" (dict
+    "ipam" ($imports.ipam | default "")
+    "scopes" ($imports.scopes | default dict)
+    "pools" ($imports.pools | default dict)
+    "poolCidrs" ($imports.poolCidrs | default dict)
+  )
   "forProvider" ($spec.forProvider | default dict)
   "labels" (merge $defaultLabels ($spec.labels | default dict))
   "providerConfigRef" (dict

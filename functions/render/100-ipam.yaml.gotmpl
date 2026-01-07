@@ -18,8 +18,8 @@ metadata:
   name: {{ $ipam.name }}
   annotations:
     {{ setResourceNameAnnotation "ipam" }}
-    {{- if $ipam.externalName }}
-    crossplane.io/external-name: {{ $ipam.externalName | quote }}
+    {{- if $ipam.imports.ipam }}
+    crossplane.io/external-name: {{ $ipam.imports.ipam | quote }}
     {{- end }}
   labels: {{ $ipam.labels | toJson }}
 spec:

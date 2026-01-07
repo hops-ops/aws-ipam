@@ -47,37 +47,39 @@ _test_pool_name = "test-ipv4-" + _now
 _test_pool_ipv6_ula = "test-ipv6-ula-" + _now
 
 # =============================================================================
-# Existing resource IDs (update after first successful run)
+# Import external names (update after first successful run)
 # =============================================================================
 # After running once, get IDs with:
 #   aws ec2 describe-ipams --query 'Ipams[*].[IpamId,Tags]'
 #   aws ec2 describe-ipam-pools --query 'IpamPools[*].[IpamPoolId,Description]'
 #   aws ec2 describe-ipam-pool-cidrs --ipam-pool-id <pool-id>
 #
-_ipam_external_name = "ipam-0573c7815d0a36e00"
+# All external names are collected in one flat imports object.
+# Pool CIDR external name format: cidr_pool-id (e.g., 10.0.0.0/8_ipam-pool-xxx)
 
-# Global IPv4 pool (cidrExternalName format: cidr_pool-id)
-_ipv4_global_pool_external_name = "ipam-pool-0a82c73b97dc0dabb"
-_ipv4_global_cidr_external_name = "10.0.0.0/8" + "_" + _ipv4_global_pool_external_name
+_imports = {
+    # IPAM ID
+    ipam: "ipam-0573c7815d0a36e00"
 
-# Regional IPv4 pool for us-east-2 (child of global)
-# Update after first run with: aws ec2 describe-ipam-pools --query 'IpamPools[?contains(Description, `regional`)].IpamPoolId'
-_ipv4_regional_useast2_external_name = "ipam-pool-0607416fa3707147a"
-_ipv4_regional_useast2_cidr_external_name = "10.0.0.0/12" + "_" + _ipv4_regional_useast2_external_name
+    # Pool IDs - keyed by pool name
+    pools: {
+        "ipv4": "ipam-pool-0a82c73b97dc0dabb"
+        "ipv4-us-east-2": "ipam-pool-0607416fa3707147a"
+        "ipv6-public": "ipam-pool-06b3ec78deea8bcb9"
+        "ipv6-private": "ipam-pool-02261bfded584dbfb"
+        "ipv6-private-us-east-2": "ipam-pool-0ca730678e463dbfc"
+    }
 
-# IPv6 public pool (Amazon GUA) - cidrExternalName format: cidr_pool-id
-_ipv6_public_pool_external_name = "ipam-pool-06b3ec78deea8bcb9"
-_ipv6_public_cidr_external_name = "2600:1f26:47:c000::/52" + "_" + _ipv6_public_pool_external_name
-
-# IPv6 private pool (ULA /32) - will be recreated with new size
-# Clear external names to recreate with correct hierarchy
-_ipv6_private_pool_external_name = "ipam-pool-02261bfded584dbfb"
-_ipv6_private_cidr_external_name = "fda0:daf7::/32" + "_" + _ipv6_private_pool_external_name
-
-# Regional IPv6 private pool for us-east-2 (child of global ULA, /48)
-# Clear external names to recreate with correct hierarchy
-_ipv6_private_regional_useast2_external_name = "ipam-pool-0ca730678e463dbfc"
-_ipv6_private_regional_useast2_cidr_external_name = "fda0:daf7:1::/48" + "_" + _ipv6_private_regional_useast2_external_name
+    # Pool CIDR external names - keyed by pool name
+    # Format: cidr_pool-id
+    poolCidrs: {
+        "ipv4": "10.0.0.0/8_ipam-pool-0a82c73b97dc0dabb"
+        "ipv4-us-east-2": "10.0.0.0/12_ipam-pool-0607416fa3707147a"
+        "ipv6-public": "2600:1f26:47:c000::/52_ipam-pool-06b3ec78deea8bcb9"
+        "ipv6-private": "fda0:daf7::/32_ipam-pool-02261bfded584dbfb"
+        "ipv6-private-us-east-2": "fda0:daf7:1::/48_ipam-pool-0ca730678e463dbfc"
+    }
+}
 
 _items = [
     metav1alpha1.E2ETest{
@@ -95,8 +97,8 @@ _items = [
                         managementPolicies: _persist
                         region: _home_region
                         operatingRegions: [_home_region]
-                        if _ipam_external_name:
-                            externalName: _ipam_external_name
+                        # Top-level imports object for all external names
+                        imports: _imports
                         pools: {
                             # ==========================================================
                             # IPv4 POOLS
@@ -117,10 +119,7 @@ _items = [
                                         }
                                     }
                                     description: "Global IPv4 pool (/8, allocates /12 regional pools)"
-                                    if _ipv4_global_pool_external_name:
-                                        externalName: _ipv4_global_pool_external_name
-                                    if _ipv4_global_cidr_external_name:
-                                        cidrExternalName: _ipv4_global_cidr_external_name
+                                    # External names are now in spec.imports.pools/poolCidrs
                                     labels: {
                                         "pool-type": "global"
                                         "hops.ops.com.ai/global-pool": "ipv4"
@@ -149,10 +148,7 @@ _items = [
                                         }
                                     }
                                     description: "Regional IPv4 pool for us-east-2 (/12, allocates /16 VPCs)"
-                                    if _ipv4_regional_useast2_external_name:
-                                        externalName: _ipv4_regional_useast2_external_name
-                                    if _ipv4_regional_useast2_cidr_external_name:
-                                        cidrExternalName: _ipv4_regional_useast2_cidr_external_name
+                                    # External names are now in spec.imports.pools/poolCidrs
                                     labels: {
                                         "pool-type": "regional"
                                         "region": "us-east-2"
@@ -212,10 +208,7 @@ _items = [
                                             }
                                         }
                                         description: "Global IPv6 private pool (ULA /32, allocates /48 regional pools)"
-                                        if _ipv6_private_pool_external_name:
-                                            externalName: _ipv6_private_pool_external_name
-                                        if _ipv6_private_cidr_external_name:
-                                            cidrExternalName: _ipv6_private_cidr_external_name
+                                        # External names are now in spec.imports.pools/poolCidrs
                                         labels: {
                                             "pool-type": "global"
                                             "hops.ops.com.ai/global-pool": "ipv6-private"
@@ -227,7 +220,7 @@ _items = [
                                     },
 
                                     # Regional IPv6 private pool - us-east-2
-                                    # Child of global ipv6-private pool. 
+                                    # Child of global ipv6-private pool.
                                     {
                                         name: "ipv6-private-us-east-2"
                                         sourcePoolRef: "ipv6-private"  # Child of global ULA pool
@@ -244,10 +237,7 @@ _items = [
                                             }
                                         }
                                         description: "Regional IPv6 private pool for us-east-2 (/48, allocates /56 VPCs)"
-                                        if _ipv6_private_regional_useast2_external_name:
-                                            externalName: _ipv6_private_regional_useast2_external_name
-                                        if _ipv6_private_regional_useast2_cidr_external_name:
-                                            cidrExternalName: _ipv6_private_regional_useast2_cidr_external_name
+                                        # External names are now in spec.imports.pools/poolCidrs
                                         labels: {
                                             "pool-type": "regional"
                                             "region": "us-east-2"
@@ -304,10 +294,7 @@ _items = [
                                             }
                                         }
                                         description: "Global IPv6 public pool (Amazon GUA)"
-                                        if _ipv6_public_pool_external_name:
-                                            externalName: _ipv6_public_pool_external_name
-                                        if _ipv6_public_cidr_external_name:
-                                            cidrExternalName: _ipv6_public_cidr_external_name
+                                        # External names are now in spec.imports.pools/poolCidrs
                                         labels: {
                                             "pool-type": "global"
                                         }

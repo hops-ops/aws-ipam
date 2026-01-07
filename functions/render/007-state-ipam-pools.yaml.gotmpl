@@ -11,11 +11,14 @@
 # ==============================================================================
 # Build IPv4 pools
 # ==============================================================================
+{{- $imports := $state.ipam.imports }}
 {{- $ipv4Pools := list }}
 {{- range $pool := $eff.pools.ipv4 }}
   {{- $poolName := $pool.name }}
   {{- $poolObs := get $obs.pools $poolName | default dict }}
   {{- $poolMgmtPolicies := $pool.managementPolicies | default $state.ipam.managementPolicies }}
+  {{- $poolExternalName := get $imports.pools $poolName | default "" }}
+  {{- $poolCidrExternalName := get $imports.poolCidrs $poolName | default "" }}
 
   # Pool references
   {{- $sourcePoolRef := $pool.sourcePoolRef | default "" }}
@@ -75,8 +78,8 @@
     "labels" (merge $state.ipam.labels (dict "hops.ops.com.ai/ipam-pool" $poolName) ($pool.labels | default dict))
     "tags" (merge $state.ipam.defaultTags ($pool.tags | default dict))
     "forProvider" ($pool.forProvider | default dict)
-    "externalName" ($pool.externalName | default "")
-    "cidrExternalName" ($pool.cidrExternalName | default "")
+    "externalName" $poolExternalName
+    "cidrExternalName" $poolCidrExternalName
     "cidr" ($pool.cidr | default "")
     "netmaskLength" $pool.netmaskLength
     "allocations" ($pool.allocations | default dict)
@@ -103,6 +106,8 @@
   {{- $poolName := $pool.name }}
   {{- $poolObs := get $obs.pools $poolName | default dict }}
   {{- $poolMgmtPolicies := $pool.managementPolicies | default $state.ipam.managementPolicies }}
+  {{- $poolExternalName := get $imports.pools $poolName | default "" }}
+  {{- $poolCidrExternalName := get $imports.poolCidrs $poolName | default "" }}
 
   # Pool references
   {{- $sourcePoolRef := $pool.sourcePoolRef | default "" }}
@@ -162,8 +167,8 @@
     "labels" (merge $state.ipam.labels (dict "hops.ops.com.ai/ipam-pool" $poolName) ($pool.labels | default dict))
     "tags" (merge $state.ipam.defaultTags ($pool.tags | default dict))
     "forProvider" ($pool.forProvider | default dict)
-    "externalName" ($pool.externalName | default "")
-    "cidrExternalName" ($pool.cidrExternalName | default "")
+    "externalName" $poolExternalName
+    "cidrExternalName" $poolCidrExternalName
     "cidr" ($pool.cidr | default "")
     "netmaskLength" $pool.netmaskLength
     "allocations" ($pool.allocations | default dict)
@@ -190,6 +195,8 @@
   {{- $poolName := $pool.name }}
   {{- $poolObs := get $obs.pools $poolName | default dict }}
   {{- $poolMgmtPolicies := $pool.managementPolicies | default $state.ipam.managementPolicies }}
+  {{- $poolExternalName := get $imports.pools $poolName | default "" }}
+  {{- $poolCidrExternalName := get $imports.poolCidrs $poolName | default "" }}
 
   # Pool references
   {{- $sourcePoolRef := $pool.sourcePoolRef | default "" }}
@@ -242,8 +249,8 @@
     "labels" (merge $state.ipam.labels (dict "hops.ops.com.ai/ipam-pool" $poolName) ($pool.labels | default dict))
     "tags" (merge $state.ipam.defaultTags ($pool.tags | default dict))
     "forProvider" ($pool.forProvider | default dict)
-    "externalName" ($pool.externalName | default "")
-    "cidrExternalName" ($pool.cidrExternalName | default "")
+    "externalName" $poolExternalName
+    "cidrExternalName" $poolCidrExternalName
     "cidr" ($pool.cidr | default "")
     "netmaskLength" $pool.netmaskLength
     "allocations" ($pool.allocations | default dict)

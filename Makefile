@@ -16,7 +16,8 @@ EXAMPLES := \
 	examples/ipams/standard.yaml::examples/test/mocks/observed-resources/standard/steps/2/ \
 	examples/ipams/standard.yaml::examples/test/mocks/observed-resources/standard/steps/3/ \
 	examples/ipams/standard.yaml::examples/test/mocks/observed-resources/standard/steps/4/ \
-	examples/ipams/management-policies.yaml::
+	examples/ipams/management-policies.yaml:: \
+	examples/ipams/import.yaml::
 
 clean:
 	rm -rf _output

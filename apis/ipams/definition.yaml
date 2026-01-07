@@ -46,6 +46,35 @@ spec:
                   - LateInitialize
                 default:
                 - "*"
+              imports:
+                type: object
+                description: |
+                  External names of existing AWS resources to import into Crossplane management.
+                  Use with managementPolicies excluding "Delete" to adopt without risk of deletion.
+                  Leave fields empty to create new resources.
+                properties:
+                  ipam:
+                    type: string
+                    description: |
+                      Existing IPAM ID to import (e.g., ipam-0123456789abcdef0).
+                      When set, Crossplane imports the existing IPAM instead of creating a new one.
+                  scopes:
+                    type: object
+                    description: Map of scope names to IPAM scope IDs.
+                    additionalProperties:
+                      type: string
+                  pools:
+                    type: object
+                    description: Map of pool names to IPAM pool IDs.
+                    additionalProperties:
+                      type: string
+                  poolCidrs:
+                    type: object
+                    description: |
+                      Map of pool names to pool CIDR external names.
+                      Format: "cidr_pool-id" (e.g., "10.0.0.0/8_ipam-pool-0123456789abcdef0").
+                    additionalProperties:
+                      type: string
               providerConfigRef:
                 type: object
                 description: Reference to the ProviderConfig for AWS API operations.
@@ -63,11 +92,6 @@ spec:
                     default: default
                 required:
                   - name
-              externalName:
-                type: string
-                description: |
-                  IPAM ID to adopt (e.g., ipam-0123456789abcdef0).
-                  When set, Crossplane imports the existing IPAM instead of creating a new one.
               forProvider:
                 type: object
                 description: Override any forProvider field on the VPCIpam resource. Keys here overwrite template defaults.
@@ -97,11 +121,6 @@ spec:
                     name:
                       type: string
                       description: Unique name for the scope, referenced by pools via scopeRef.
-                    externalName:
-                      type: string
-                      description: |
-                        IPAM Scope ID to adopt (e.g., ipam-scope-0123456789abcdef0).
-                        When set, Crossplane imports the existing scope instead of creating a new one.
                     description:
                       type: string
                       description: Description for the scope.
@@ -133,11 +152,6 @@ spec:
                           description: |
                             Reference to a parent pool by name (within same IPAM).
                             Creates a child pool that allocates from the parent's CIDR space.
-                        externalName:
-                          type: string
-                          description: |
-                            IPAM Pool ID to adopt (e.g., ipam-pool-0123456789abcdef0).
-                            When set, Crossplane imports the existing pool instead of creating a new one.
                         managementPolicies:
                           type: array
                           description: |
@@ -164,11 +178,6 @@ spec:
                           minimum: 8
                           maximum: 32
                           description: Netmask length for auto-assigned CIDR. Conflicts with cidr.
-                        cidrExternalName:
-                          type: string
-                          description: |
-                            VPCIpamPoolCidr external name to adopt. Format: cidr_pool-id
-                            (e.g., 10.0.0.0/8_ipam-pool-0123456789abcdef0).
                         scopeRef:
                           type: string
                           description: Reference to a custom scope defined in spec.scopes by name.
@@ -237,9 +246,6 @@ spec:
                             sourcePoolRef:
                               type: string
                               description: Reference to a parent ULA pool by name (within same IPAM).
-                            externalName:
-                              type: string
-                              description: IPAM Pool ID to adopt (e.g., ipam-pool-0123456789abcdef0).
                             managementPolicies:
                               type: array
                               description: ManagementPolicies for this pool. Overrides spec.managementPolicies if set.
@@ -261,9 +267,6 @@ spec:
                               minimum: 9
                               maximum: 128
                               description: Netmask length for AWS to auto-assign from fd00::/8 range.
-                            cidrExternalName:
-                              type: string
-                              description: VPCIpamPoolCidr external name to adopt.
                             scopeRef:
                               type: string
                               description: |
@@ -329,9 +332,6 @@ spec:
                             sourcePoolRef:
                               type: string
                               description: Reference to a parent GUA pool by name (within same IPAM).
-                            externalName:
-                              type: string
-                              description: IPAM Pool ID to adopt (e.g., ipam-pool-0123456789abcdef0).
                             managementPolicies:
                               type: array
                               description: ManagementPolicies for this pool. Overrides spec.managementPolicies if set.
@@ -356,9 +356,6 @@ spec:
                               description: |
                                 Netmask length for the Amazon-provided IPv6 CIDR block.
                                 AWS limits this to /40-/52. Default /52 provides 16 VPC allocations.
-                            cidrExternalName:
-                              type: string
-                              description: VPCIpamPoolCidr external name to adopt.
                             publicIpSource:
                               type: string
                               description: Source of public IP addresses. Defaults to amazon.
