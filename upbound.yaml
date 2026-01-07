@@ -1,7 +1,7 @@
 apiVersion: meta.dev.upbound.io/v2alpha1
 kind: Project
 metadata:
-  name: configuration-aws-ipam
+  name: aws-ipam
 spec:
   dependsOn:
   - apiVersion: pkg.crossplane.io/v1
@@ -16,8 +16,8 @@ spec:
   license: Apache-2.0
   maintainer: Patrick Lee Scott <pat@patscott.io>
   readme: |
-    # configuration-aws-ipam
+    # aws-ipam
 
     Provides a reusable IPAM blueprint that owns the AWS VPC IP Address Manager plus declarative pools.
-  repository: ghcr.io/hops-ops/configuration-aws-ipam
-  source: github.com/hops-ops/configuration-aws-ipam
+  repository: ghcr.io/hops-ops/aws-ipam
+  source: github.com/hops-ops/aws-ipam

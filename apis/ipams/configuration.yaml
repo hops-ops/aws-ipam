@@ -1,10 +1,10 @@
 apiVersion: meta.pkg.crossplane.io/v1alpha1
 kind: Configuration
 metadata:
-  name: configuration-aws-ipam
+  name: aws-ipam
   annotations:
     meta.crossplane.io/maintainer: Patrick Lee Scott
-    meta.crossplane.io/source: github.com/hops-ops/configuration-aws-ipam
+    meta.crossplane.io/source: github.com/hops-ops/aws-ipam
     meta.crossplane.io/description: Declarative AWS VPC IP Address Manager (IPAM) scaffolding for hops compositions.
 spec:
   dependsOn:

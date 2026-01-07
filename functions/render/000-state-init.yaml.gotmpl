@@ -11,6 +11,14 @@
 {{- $spec := $xr.spec | default (dict) }}
 
 # ==============================================================================
+# Default labels: managed=true + <kind>=<name>
+# ==============================================================================
+{{- $defaultLabels := dict
+  "hops.ops.com.ai/managed" "true"
+  (printf "hops.ops.com.ai/%s" (lower $xr.kind)) $metadata.name
+}}
+
+# ==============================================================================
 # Build spec.effective with defaults
 # ==============================================================================
 {{- $providerConfigRef := $spec.providerConfigRef | default (dict) }}
@@ -24,6 +32,7 @@
   "managementPolicies" ($spec.managementPolicies | default (list "*"))
   "externalName" ($spec.externalName | default "")
   "forProvider" ($spec.forProvider | default dict)
+  "labels" (merge $defaultLabels ($spec.labels | default dict))
   "providerConfigRef" (dict
     "name" ($providerConfigRef.name | default "default")
     "kind" ($providerConfigRef.kind | default "ProviderConfig")

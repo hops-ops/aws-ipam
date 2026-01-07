@@ -1,7 +1,7 @@
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
-  name: configuration-aws-ipam-v1alpha1-1
+  name: aws-ipam-v1alpha1-1
 spec:
   compositeTypeRef:
     apiVersion: aws.hops.ops.com.ai/v1alpha1
@@ -9,7 +9,7 @@ spec:
   mode: Pipeline
   pipeline:
   - functionRef:
-      name: hops-ops-configuration-aws-ipamrender
+      name: hops-ops-aws-ipamrender
     step: render
   - functionRef:
       name: crossplane-contrib-function-auto-ready

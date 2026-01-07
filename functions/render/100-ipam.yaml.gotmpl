@@ -21,6 +21,7 @@ metadata:
     {{- if $ipam.externalName }}
     crossplane.io/external-name: {{ $ipam.externalName | quote }}
     {{- end }}
+  labels: {{ $ipam.labels | toJson }}
 spec:
   managementPolicies: {{ toYaml $ipam.managementPolicies | nindent 4 }}
   forProvider:

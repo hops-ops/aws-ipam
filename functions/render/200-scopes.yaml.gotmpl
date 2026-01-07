@@ -25,8 +25,7 @@ metadata:
     {{- if $scope.externalName }}
     crossplane.io/external-name: {{ $scope.externalName | quote }}
     {{- end }}
-  labels:
-    hops.ops.com.ai/ipam-scope: {{ $scope.name }}
+  labels: {{ $scope.labels | toJson }}
 spec:
   managementPolicies: {{ toYaml $ipam.managementPolicies | nindent 4 }}
   forProvider:

@@ -72,7 +72,7 @@
     "locale" ($pool.locale | default "")
     "description" ($pool.description | default (printf "%s pool for %s" $poolName $state.ipam.name))
     "managementPolicies" $poolMgmtPolicies
-    "labels" (merge (dict "hops.ops.com.ai/ipam-pool" $poolName) ($pool.labels | default dict))
+    "labels" (merge $state.ipam.labels (dict "hops.ops.com.ai/ipam-pool" $poolName) ($pool.labels | default dict))
     "tags" (merge $state.ipam.defaultTags ($pool.tags | default dict))
     "forProvider" ($pool.forProvider | default dict)
     "externalName" ($pool.externalName | default "")
@@ -159,7 +159,7 @@
     "locale" ($pool.locale | default "")
     "description" ($pool.description | default (printf "%s pool for %s" $poolName $state.ipam.name))
     "managementPolicies" $poolMgmtPolicies
-    "labels" (merge (dict "hops.ops.com.ai/ipam-pool" $poolName) ($pool.labels | default dict))
+    "labels" (merge $state.ipam.labels (dict "hops.ops.com.ai/ipam-pool" $poolName) ($pool.labels | default dict))
     "tags" (merge $state.ipam.defaultTags ($pool.tags | default dict))
     "forProvider" ($pool.forProvider | default dict)
     "externalName" ($pool.externalName | default "")
@@ -239,7 +239,7 @@
     "locale" ($pool.locale | default "")
     "description" ($pool.description | default (printf "%s pool for %s" $poolName $state.ipam.name))
     "managementPolicies" $poolMgmtPolicies
-    "labels" (merge (dict "hops.ops.com.ai/ipam-pool" $poolName) ($pool.labels | default dict))
+    "labels" (merge $state.ipam.labels (dict "hops.ops.com.ai/ipam-pool" $poolName) ($pool.labels | default dict))
     "tags" (merge $state.ipam.defaultTags ($pool.tags | default dict))
     "forProvider" ($pool.forProvider | default dict)
     "externalName" ($pool.externalName | default "")

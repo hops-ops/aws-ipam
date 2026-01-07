@@ -24,6 +24,7 @@
     "key" (printf "custom-scope-%s" $scopeName)
     "externalName" ($scope.externalName | default "")
     "description" ($scope.description | default (printf "Custom scope %s for %s" $scopeName $state.ipam.name))
+    "labels" (merge $state.ipam.labels (dict "hops.ops.com.ai/ipam-scope" $scopeName))
     "tags" (merge $state.ipam.defaultTags ($scope.tags | default dict))
     "ready" ($scopeObs.ready | default false)
     "render" true

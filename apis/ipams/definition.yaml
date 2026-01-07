@@ -26,6 +26,12 @@ spec:
             - region
             - pools
             properties:
+              labels:
+                type: object
+                description: Custom labels applied to all managed resources. Merged with default labels (hops.ops.com.ai/managed, hops.ops.com.ai/<kind>).
+                additionalProperties:
+                  type: string
+                x-kubernetes-preserve-unknown-fields: true
               managementPolicies:
                 type: array
                 description: Management operations permitted on composed resources. Use ["*"] for full management or omit Delete to orphan.

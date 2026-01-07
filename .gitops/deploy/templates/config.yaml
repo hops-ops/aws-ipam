@@ -1,23 +1,23 @@
 apiVersion: pkg.crossplane.io/v1
 kind: Configuration
 metadata:
-  name: configuration-aws-ipam
+  name: aws-ipam
 spec:
-  package: ghcr.io/hops-ops/configuration-aws-ipam:{{ .Values.version }}
+  package: ghcr.io/hops-ops/aws-ipam:{{ .Values.version }}
   packagePullSecrets:
     - name: ghcr
   skipDependencyResolution: {{ .Values.skipDependencyResolution }}
 
 ---
 
-# skipDependencyResolution false would name this hops-ops-configuration-aws-ipamrender
+# skipDependencyResolution false would name this hops-ops-aws-ipamrender
 # so we need to match that format to avoid issues with the package name
 apiVersion: pkg.crossplane.io/v1
 kind: Function
 metadata:
-  name: hops-ops-configuration-aws-ipamrender
+  name: hops-ops-aws-ipamrender
 spec:
-  package: ghcr.io/hops-ops/configuration-aws-ipam_render:{{ .Values.version }}
+  package: ghcr.io/hops-ops/aws-ipam_render:{{ .Values.version }}
   packagePullSecrets:
     - name: ghcr
   skipDependencyResolution: {{ .Values.skipDependencyResolution }}

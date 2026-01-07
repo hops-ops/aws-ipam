@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 
-PACKAGE ?= configuration-aws-ipam
+PACKAGE ?= aws-ipam
 XRD_DIR := apis/ipams
 COMPOSITION := $(XRD_DIR)/composition.yaml
 DEFINITION := $(XRD_DIR)/definition.yaml

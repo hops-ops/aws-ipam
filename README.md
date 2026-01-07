@@ -1,4 +1,4 @@
-# configuration-aws-ipam
+# aws-ipam
 
 Centralized IP address management for AWS. Stop tracking CIDRs in spreadsheets - request them from pools and let IPAM handle allocation, overlap prevention, and auditing.
 
