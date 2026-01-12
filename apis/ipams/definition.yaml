@@ -28,7 +28,13 @@ spec:
             properties:
               labels:
                 type: object
-                description: Custom labels applied to all managed resources. Merged with default labels (hops.ops.com.ai/managed, hops.ops.com.ai/<kind>).
+                description: Custom labels applied to all Kubernetes resources. Merged with default labels (hops.ops.com.ai/managed, hops.ops.com.ai/<kind>).
+                additionalProperties:
+                  type: string
+                x-kubernetes-preserve-unknown-fields: true
+              tags:
+                type: object
+                description: Custom tags applied to all AWS resources. Merged with default tags (hops.ops.com.ai/managed, hops.ops.com.ai/<kind>).
                 additionalProperties:
                   type: string
                 x-kubernetes-preserve-unknown-fields: true
@@ -107,7 +113,9 @@ spec:
                       description: Description for the scope.
                     tags:
                       type: object
-                      description: Extra AWS tags merged with the default tag map.
+                      description: Extra tags merged with spec.tags and defaults.
+                      additionalProperties:
+                        type: string
                       x-kubernetes-preserve-unknown-fields: true
               pools:
                 type: object
@@ -210,10 +218,14 @@ spec:
                         labels:
                           type: object
                           description: Labels propagated to VpcIpamPool resources.
+                          additionalProperties:
+                            type: string
                           x-kubernetes-preserve-unknown-fields: true
                         tags:
                           type: object
-                          description: Extra AWS tags merged with the default tag map.
+                          description: Extra tags merged with spec.tags and defaults.
+                          additionalProperties:
+                            type: string
                           x-kubernetes-preserve-unknown-fields: true
                   ipv6:
                     type: object
@@ -307,10 +319,14 @@ spec:
                             labels:
                               type: object
                               description: Labels propagated to VpcIpamPool resources.
+                              additionalProperties:
+                                type: string
                               x-kubernetes-preserve-unknown-fields: true
                             tags:
                               type: object
-                              description: Extra AWS tags merged with the default tag map.
+                              description: Extra tags merged with spec.tags and defaults.
+                              additionalProperties:
+                                type: string
                               x-kubernetes-preserve-unknown-fields: true
                       gua:
                         type: array
@@ -411,10 +427,14 @@ spec:
                             labels:
                               type: object
                               description: Labels propagated to VpcIpamPool resources.
+                              additionalProperties:
+                                type: string
                               x-kubernetes-preserve-unknown-fields: true
                             tags:
                               type: object
-                              description: Extra AWS tags merged with the default tag map.
+                              description: Extra tags merged with spec.tags and defaults.
+                              additionalProperties:
+                                type: string
                               x-kubernetes-preserve-unknown-fields: true
           status:
             type: object

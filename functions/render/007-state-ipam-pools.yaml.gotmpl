@@ -73,7 +73,7 @@
     "description" ($pool.description | default (printf "%s pool for %s" $poolName $state.ipam.name))
     "managementPolicies" $poolMgmtPolicies
     "labels" (merge $state.ipam.labels (dict "hops.ops.com.ai/ipam-pool" $poolName) ($pool.labels | default dict))
-    "tags" (merge $state.ipam.defaultTags ($pool.tags | default dict))
+    "tags" (merge $state.ipam.tags (dict "hops.ops.com.ai/ipam-pool" $poolName) ($pool.tags | default dict))
     "forProvider" ($pool.forProvider | default dict)
     "externalName" ($pool.externalName | default "")
     "cidrExternalName" ($pool.cidrExternalName | default "")
@@ -160,7 +160,7 @@
     "description" ($pool.description | default (printf "%s pool for %s" $poolName $state.ipam.name))
     "managementPolicies" $poolMgmtPolicies
     "labels" (merge $state.ipam.labels (dict "hops.ops.com.ai/ipam-pool" $poolName) ($pool.labels | default dict))
-    "tags" (merge $state.ipam.defaultTags ($pool.tags | default dict))
+    "tags" (merge $state.ipam.tags (dict "hops.ops.com.ai/ipam-pool" $poolName) ($pool.tags | default dict))
     "forProvider" ($pool.forProvider | default dict)
     "externalName" ($pool.externalName | default "")
     "cidrExternalName" ($pool.cidrExternalName | default "")
@@ -240,7 +240,7 @@
     "description" ($pool.description | default (printf "%s pool for %s" $poolName $state.ipam.name))
     "managementPolicies" $poolMgmtPolicies
     "labels" (merge $state.ipam.labels (dict "hops.ops.com.ai/ipam-pool" $poolName) ($pool.labels | default dict))
-    "tags" (merge $state.ipam.defaultTags ($pool.tags | default dict))
+    "tags" (merge $state.ipam.tags (dict "hops.ops.com.ai/ipam-pool" $poolName) ($pool.tags | default dict))
     "forProvider" ($pool.forProvider | default dict)
     "externalName" ($pool.externalName | default "")
     "cidrExternalName" ($pool.cidrExternalName | default "")

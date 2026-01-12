@@ -61,7 +61,10 @@ _items = [
                     spec = {
                         managementPolicies = ["*"]
                         providerConfigRef = {name = "default", kind = "ProviderConfig"}
-                        forProvider.tags = {hops = "true"}
+                        forProvider.tags = {
+                            "hops.ops.com.ai/managed" = "true"
+                            "hops.ops.com.ai/ipam" = "test-defaults"
+                        }
                     }
                 }
                 # Pool should inherit defaults
@@ -72,7 +75,11 @@ _items = [
                     spec = {
                         managementPolicies = ["*"]
                         providerConfigRef = {name = "default", kind = "ProviderConfig"}
-                        forProvider.tags = {hops = "true"}
+                        forProvider.tags = {
+                            "hops.ops.com.ai/managed" = "true"
+                            "hops.ops.com.ai/ipam" = "test-defaults"
+                            "hops.ops.com.ai/ipam-pool" = "default-pool"
+                        }
                     }
                 }
             ]
@@ -149,7 +156,7 @@ _items = [
     # Test: Tags merge with defaults
     # =========================================================================
     # When: Custom tags provided in pool config
-    # Then: Tags merge with default "hops: true" tag
+    # Then: Tags merge with default managed/ipam tags
     metav1alpha1.CompositionTest{
         metadata.name = "tags-merge-with-defaults"
         spec = {
@@ -197,7 +204,9 @@ _items = [
                     kind = "VPCIpamPool"
                     metadata.name = "test-tags-tagged-pool"
                     spec.forProvider.tags = {
-                        hops = "true"
+                        "hops.ops.com.ai/managed" = "true"
+                        "hops.ops.com.ai/ipam" = "test-tags"
+                        "hops.ops.com.ai/ipam-pool" = "tagged-pool"
                         Environment = "production"
                         Team = "platform"
                     }
@@ -665,8 +674,8 @@ _items = [
     # =========================================================================
     # Test: Pool external name annotation for adoption
     # =========================================================================
-    # When: pool.externalName is set
-    # Then: VPCIpamPool has crossplane.io/external-name annotation
+    # When: imports.pools and imports.poolCidrs are set
+    # Then: VPCIpamPool and VPCIpamPoolCidr have crossplane.io/external-name annotation
     metav1alpha1.CompositionTest{
         metadata.name = "pool-external-name-adoption"
         spec = {
@@ -764,7 +773,12 @@ _items = [
                     spec.forProvider = {
                         description = "Isolated scope for Team A"
                         ipamIdRef.name = "test-scope"
-                        tags = {hops = "true", team = "a"}
+                        tags = {
+                            "hops.ops.com.ai/managed" = "true"
+                            "hops.ops.com.ai/ipam" = "test-scope"
+                            "hops.ops.com.ai/ipam-scope" = "team-a"
+                            team = "a"
+                        }
                     }
                 }
             ]
