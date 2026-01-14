@@ -2,10 +2,10 @@
 apiVersion: protection.crossplane.io/v1beta1
 kind: Usage
 metadata:
-  name: of-ipam-pool-platform-ipv4-by-child-pool-platform-ipv4-us-east-1
+  name: delete-platform-ipv4-us-east-1-before-platform-ipv4
   annotations:
-    crossplane.io/composition-resource-name: ipam-child-pool-usage-ipv4-us-east-1
-    gotemplating.fn.crossplane.io/composition-resource-name: ipam-child-pool-usage-ipv4-us-east-1
+    crossplane.io/composition-resource-name: delete-ipv4-us-east-1-before-parent-pool
+    gotemplating.fn.crossplane.io/composition-resource-name: delete-ipv4-us-east-1-before-parent-pool
 status:
   conditions:
     - type: Ready

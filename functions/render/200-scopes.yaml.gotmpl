@@ -34,13 +34,14 @@ spec:
       name: {{ $ipam.name }}
     region: {{ $ipam.region }}
     tags:
+      Name: {{ $scope.resourceName }}
       {{- toYaml $scope.tags | nindent 6 }}
   providerConfigRef:
     kind: {{ $ipam.providerConfig.kind }}
     name: {{ $ipam.providerConfig.name }}
 
   # ---------------------------------------------------------------------------
-  # Usage: Custom scope uses IPAM
+  # Usage: Delete custom scope before IPAM
   # ---------------------------------------------------------------------------
   {{- if and $obs.ipam.ready $scope.ready }}
 
@@ -48,9 +49,9 @@ spec:
 apiVersion: protection.crossplane.io/v1beta1
 kind: Usage
 metadata:
-  name: {{ printf "of-%s-by-%s" $ipam.name $scope.resourceName }}
+  name: {{ printf "delete-%s-before-%s" $scope.resourceName $ipam.name }}
   annotations:
-    {{ setResourceNameAnnotation (printf "custom-scope-usage-%s" $scope.name) }}
+    {{ setResourceNameAnnotation (printf "delete-%s-before-ipam" $scope.name) }}
 spec:
   replayDeletion: true
   by:

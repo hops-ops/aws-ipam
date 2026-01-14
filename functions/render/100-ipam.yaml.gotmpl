@@ -32,6 +32,7 @@ spec:
       - regionName: {{ . }}
       {{- end }}
     tags:
+      Name: {{ $ipam.name }}
       {{- toYaml $ipam.defaultTags | nindent 6 }}
     {{- with $ipam.forProvider }}
     {{ toYaml . | nindent 4 }}

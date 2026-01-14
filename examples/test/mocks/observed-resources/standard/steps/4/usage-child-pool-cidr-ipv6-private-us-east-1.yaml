@@ -2,10 +2,10 @@
 apiVersion: protection.crossplane.io/v1beta1
 kind: Usage
 metadata:
-  name: of-ipam-pool-cidr-platform-ipv6-private-cidr-by-child-pool-platform-ipv6-private-us-east-1
+  name: delete-platform-ipv6-private-us-east-1-before-platform-ipv6-private-cidr
   annotations:
-    crossplane.io/composition-resource-name: ipam-child-pool-cidr-usage-ipv6-private-us-east-1
-    gotemplating.fn.crossplane.io/composition-resource-name: ipam-child-pool-cidr-usage-ipv6-private-us-east-1
+    crossplane.io/composition-resource-name: delete-ipv6-private-us-east-1-before-parent-cidr
+    gotemplating.fn.crossplane.io/composition-resource-name: delete-ipv6-private-us-east-1-before-parent-cidr
 status:
   conditions:
     - type: Ready

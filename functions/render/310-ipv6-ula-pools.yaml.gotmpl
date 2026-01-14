@@ -60,6 +60,7 @@ spec:
     allocationMaxNetmaskLength: {{ . }}
     {{- end }}
     tags:
+      Name: {{ $pool.resourceName }}
       {{- toYaml $pool.tags | nindent 6 }}
     {{- with $pool.forProvider }}
     {{ toYaml . | nindent 4 }}
@@ -69,7 +70,7 @@ spec:
     name: {{ $ipam.providerConfig.name }}
 
     # -------------------------------------------------------------------------
-    # Usage: Pool uses Custom Scope
+    # Usage: Delete pool before custom scope
     # -------------------------------------------------------------------------
     {{- if and $pool.ready $pool.usesCustomScope }}
       {{- $scopeObs := get $obs.scopes $pool.scopeRef | default dict }}
@@ -79,9 +80,9 @@ spec:
 apiVersion: protection.crossplane.io/v1beta1
 kind: Usage
 metadata:
-  name: {{ printf "of-scope-%s-by-pool-%s" $pool.scopeIdRef $pool.resourceName }}
+  name: {{ printf "delete-%s-before-%s" $pool.resourceName $pool.scopeIdRef }}
   annotations:
-    {{ setResourceNameAnnotation (printf "ipam-pool-scope-usage-%s" $pool.name) }}
+    {{ setResourceNameAnnotation (printf "delete-%s-before-scope" $pool.name) }}
 spec:
   replayDeletion: true
   by:
@@ -99,7 +100,7 @@ spec:
     {{- end }}
 
     # -------------------------------------------------------------------------
-    # Usage: Child Pool uses Parent Pool
+    # Usage: Delete child pool before parent pool
     # -------------------------------------------------------------------------
     {{- if and $pool.ready $pool.isChildPool }}
       {{- $parentObs := get $obs.pools $pool.sourcePoolRef | default dict }}
@@ -110,9 +111,9 @@ spec:
 apiVersion: protection.crossplane.io/v1beta1
 kind: Usage
 metadata:
-  name: {{ printf "of-ipam-pool-%s-by-child-pool-%s" $parentResourceName $pool.resourceName }}
+  name: {{ printf "delete-%s-before-%s" $pool.resourceName $parentResourceName }}
   annotations:
-    {{ setResourceNameAnnotation (printf "ipam-child-pool-usage-%s" $pool.name) }}
+    {{ setResourceNameAnnotation (printf "delete-%s-before-parent-pool" $pool.name) }}
 spec:
   replayDeletion: true
   by:
@@ -127,7 +128,7 @@ spec:
       name: {{ $parentResourceName }}
 
         # -----------------------------------------------------------------------
-        # Usage: Child Pool uses Parent Pool's CIDR
+        # Usage: Delete child pool before parent pool's CIDR
         # -----------------------------------------------------------------------
         {{- if ($parentObs.cidr | default dict).ready }}
           {{- $parentCidrResourceName := printf "%s-%s-cidr" $ipam.name $pool.sourcePoolRef }}
@@ -136,9 +137,9 @@ spec:
 apiVersion: protection.crossplane.io/v1beta1
 kind: Usage
 metadata:
-  name: {{ printf "of-ipam-pool-cidr-%s-by-child-pool-%s" $parentCidrResourceName $pool.resourceName }}
+  name: {{ printf "delete-%s-before-%s" $pool.resourceName $parentCidrResourceName }}
   annotations:
-    {{ setResourceNameAnnotation (printf "ipam-child-pool-cidr-usage-%s" $pool.name) }}
+    {{ setResourceNameAnnotation (printf "delete-%s-before-parent-cidr" $pool.name) }}
 spec:
   replayDeletion: true
   by:
@@ -185,7 +186,7 @@ spec:
     name: {{ $ipam.providerConfig.name }}
 
       # -----------------------------------------------------------------------
-      # Usage: CIDR uses Pool
+      # Usage: Delete CIDR before Pool
       # -----------------------------------------------------------------------
       {{- if and $pool.ready $pool.cidrReady }}
 
@@ -193,9 +194,9 @@ spec:
 apiVersion: protection.crossplane.io/v1beta1
 kind: Usage
 metadata:
-  name: {{ printf "of-ipam-pool-%s-by-pool-cidr-%s" $pool.resourceName $pool.cidrResourceName }}
+  name: {{ printf "delete-%s-before-%s" $pool.cidrResourceName $pool.resourceName }}
   annotations:
-    {{ setResourceNameAnnotation (printf "ipam-pool-cidr-usage-%s" $pool.name) }}
+    {{ setResourceNameAnnotation (printf "delete-%s-cidr-before-pool" $pool.name) }}
 spec:
   replayDeletion: true
   by:

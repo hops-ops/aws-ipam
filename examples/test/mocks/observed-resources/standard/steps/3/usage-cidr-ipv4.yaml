@@ -2,10 +2,10 @@
 apiVersion: protection.crossplane.io/v1beta1
 kind: Usage
 metadata:
-  name: of-ipam-pool-platform-ipv4-by-pool-cidr-platform-ipv4-cidr
+  name: delete-platform-ipv4-cidr-before-platform-ipv4
   annotations:
-    crossplane.io/composition-resource-name: ipam-pool-cidr-usage-ipv4
-    gotemplating.fn.crossplane.io/composition-resource-name: ipam-pool-cidr-usage-ipv4
+    crossplane.io/composition-resource-name: delete-ipv4-cidr-before-pool
+    gotemplating.fn.crossplane.io/composition-resource-name: delete-ipv4-cidr-before-pool
 status:
   conditions:
     - type: Ready
